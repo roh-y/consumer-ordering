@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+
+# Actuator — expose health and info endpoints for load balancer checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# SpringDoc / Swagger UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Application-specific config (overridden per environment)
+app:
+  cognito:
+    user-pool-id: ${COGNITO_USER_POOL_ID:}
+    client-id: ${COGNITO_CLIENT_ID:}
+  dynamodb:
+    users-table: ${DYNAMODB_USERS_TABLE:consumer-ordering-users}
+
+# AWS region
+aws:
+  region: ${AWS_REGION:us-east-1}

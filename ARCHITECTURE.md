@@ -1,0 +1,147 @@
+# Architecture
+
+## System Overview
+
+This application follows a **microservices architecture** where each service handles one business domain. Services communicate over REST APIs and asynchronous messaging (SQS).
+
+```
+                         ┌──────────────┐
+                         │  Route 53    │  (DNS — maps domain to CloudFront)
+                         └──────┬───────┘
+                                │
+                         ┌──────▼───────┐
+                         │  CloudFront  │  (CDN — caches static files, routes API calls)
+                         └──────┬───────┘
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                                   │
+     ┌────────▼─────────┐              ┌─────────▼──────────┐
+     │  S3 (React SPA)  │              │  API Gateway (REST)│
+     │  Static website  │              │  Routes + auth     │
+     └──────────────────┘              └──────┬──────┬──────┘
+                                              │      │
+                              ┌───────────────┘      └──────────────┐
+                              │                                     │
+                     ┌────────▼─────────┐                ┌─────────▼─────────┐
+                     │ Cognito Authorizer│                │ Lambda (Recommend)│
+                     │ (validates JWT)   │                │ Bedrock+OpenSearch│
+                     └────────┬─────────┘                └───────────────────┘
+                              │
+                     ┌────────▼─────────┐
+                     │  ALB / Service   │
+                     │  Discovery       │
+                     └──┬─────┬─────┬───┘
+                        │     │     │
+          ┌─────────────┘     │     └──────────────┐
+          │                   │                    │
+ ┌────────▼────┐  ┌──────────▼──┐  ┌──────────────▼──┐
+ │User Service │  │Plan Catalog │  │Order Service    │
+ │(Spring Boot)│  │(Spring Boot)│  │(Spring Boot)    │
+ │ECS/Fargate  │  │ECS/Fargate  │  │ECS/Fargate      │
+ └──────┬──────┘  └──────┬──────┘  └───────┬─────────┘
+        │                │                  │
+        ▼                ▼                  ▼
+   ┌─────────┐     ┌─────────┐       ┌──────────┐     ┌───────────────────┐
+   │DynamoDB │     │DynamoDB │       │DynamoDB  │     │Notification Svc   │
+   │Users    │     │Plans    │       │Orders    │     │(Node.js) ◄── SQS  │
+   └─────────┘     └─────────┘       └──────────┘     └───────────────────┘
+```
+
+## Services
+
+### User Service (Phase 1 — Current)
+- **Tech**: Java 21, Spring Boot 3.4
+- **Purpose**: User registration, login, profile management
+- **Auth**: Amazon Cognito (creates users, issues JWT tokens)
+- **Database**: DynamoDB `consumer-ordering-users` table
+- **Port**: 8081
+
+### Plan Catalog Service (Phase 2)
+- **Purpose**: CRUD for wireless plans, admin management
+- **Database**: DynamoDB `consumer-ordering-plans` table
+
+### Order Service (Phase 2)
+- **Purpose**: Cart, checkout simulation, order history
+- **Database**: DynamoDB `consumer-ordering-orders` table
+- **Messaging**: Publishes order events to SQS
+
+### Notification Service (Phase 3)
+- **Tech**: Node.js, TypeScript
+- **Purpose**: Consumes SQS messages, sends simulated notifications
+
+### Recommendation Service (Phase 4)
+- **Tech**: Python Lambda
+- **Purpose**: RAG-based plan recommendations using Bedrock + OpenSearch
+
+## Data Flow: User Registration
+
+Here's what happens step-by-step when a user registers:
+
+1. User fills out the registration form in the **React frontend**
+2. Frontend sends `POST /api/users/register` to the **user-service**
+3. User-service calls **Cognito** `SignUp` API → Cognito creates the user and sends a verification email
+4. Cognito returns a `userSub` (UUID) → this becomes the user's ID everywhere
+5. User-service stores the profile in **DynamoDB** (userId, email, name, etc.)
+6. User receives the verification email with a 6-digit code
+7. User enters the code → Frontend sends `POST /api/users/confirm`
+8. User-service calls Cognito `ConfirmSignUp` → account is now active
+9. User can now log in
+
+## Data Flow: Login
+
+1. User enters email + password in the **React frontend**
+2. Frontend sends `POST /api/users/login` to the **user-service**
+3. User-service calls **Cognito** `InitiateAuth` with `USER_PASSWORD_AUTH` flow
+4. Cognito validates credentials and returns three JWT tokens:
+   - **Access Token** (1 hour) — used for API authorization
+   - **ID Token** (1 hour) — contains user attributes
+   - **Refresh Token** (30 days) — used to get new access tokens
+5. Frontend stores tokens in localStorage via Zustand
+6. All subsequent API calls include `Authorization: Bearer <accessToken>`
+7. Spring Security validates the JWT using Cognito's JWKS endpoint
+
+## DynamoDB Table Design
+
+### Users Table
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `userId` (PK) | String | Cognito sub UUID |
+| `email` (GSI) | String | User's email address |
+| `firstName` | String | |
+| `lastName` | String | |
+| `phoneNumber` | String | |
+| `address` | String | |
+| `planId` | String | Currently subscribed plan |
+| `createdAt` | String | ISO timestamp |
+| `updatedAt` | String | ISO timestamp |
+
+**Why DynamoDB?** For this demo, we need fast key-value lookups by userId and email. DynamoDB's on-demand billing means $0 cost at low volume, and it scales automatically if needed.
+
+**Why not RDS/PostgreSQL?** DynamoDB is simpler to set up (no connection pools, no schema migrations) and teaches NoSQL patterns. A real production app might use Aurora for complex queries.
+
+## Authentication Flow
+
+```
+React App                    User Service               Cognito
+    │                            │                         │
+    │──POST /register──────────►│                         │
+    │                            │──SignUp───────────────►│
+    │                            │◄──userSub──────────────│
+    │                            │──save to DynamoDB       │
+    │◄──profile──────────────────│                         │
+    │                            │                         │
+    │──POST /confirm────────────►│                         │
+    │                            │──ConfirmSignUp────────►│
+    │◄──200 OK───────────────────│                         │
+    │                            │                         │
+    │──POST /login──────────────►│                         │
+    │                            │──InitiateAuth─────────►│
+    │                            │◄──JWT tokens────────────│
+    │◄──tokens───────────────────│                         │
+    │                            │                         │
+    │──GET /profile──────────────►│                         │
+    │  (Authorization: Bearer)   │──validate JWT──────────►│
+    │                            │◄──valid─────────────────│
+    │                            │──read from DynamoDB     │
+    │◄──profile──────────────────│                         │
+```

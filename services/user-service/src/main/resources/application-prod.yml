@@ -1,0 +1,15 @@
+# Prod profile — runs on ECS Fargate with task role credentials.
+# No access keys needed; IAM task role provides AWS permissions.
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}/.well-known/jwks.json
+          issuer-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}
+
+logging:
+  level:
+    com.consumerordering: INFO
+    software.amazon.awssdk: WARN
