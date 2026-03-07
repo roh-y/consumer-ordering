@@ -1,0 +1,32 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  dynamodb:
+    orders-table: ${DYNAMODB_ORDERS_TABLE:consumer-ordering-orders}
+  sqs:
+    order-events-queue-url: ${SQS_ORDER_EVENTS_QUEUE_URL:}
+  plan-catalog-service:
+    url: ${PLAN_CATALOG_SERVICE_URL:http://localhost:8082}
+
+aws:
+  region: ${AWS_REGION:us-east-1}

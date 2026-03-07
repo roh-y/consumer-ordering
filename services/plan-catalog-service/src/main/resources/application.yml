@@ -1,0 +1,28 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: plan-catalog-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  dynamodb:
+    plans-table: ${DYNAMODB_PLANS_TABLE:consumer-ordering-plans}
+
+aws:
+  region: ${AWS_REGION:us-east-1}

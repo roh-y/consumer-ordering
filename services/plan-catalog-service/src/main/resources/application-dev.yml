@@ -1,0 +1,12 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${COGNITO_USER_POOL_ID}/.well-known/jwks.json
+          issuer-uri: https://cognito-idp.${aws.region}.amazonaws.com/${COGNITO_USER_POOL_ID}
+
+logging:
+  level:
+    com.consumerordering: DEBUG
+    software.amazon.awssdk: INFO

@@ -30,6 +30,52 @@ jobs:
       - name: Test
         run: ./mvnw test -B
 
+  plan-catalog-service:
+    name: Plan Catalog Service (Build + Test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/plan-catalog-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build
+        run: ./mvnw package -DskipTests -B
+
+      - name: Test
+        run: ./mvnw test -B
+
+  order-service:
+    name: Order Service (Build + Test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/order-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build
+        run: ./mvnw package -DskipTests -B
+
+      - name: Test
+        run: ./mvnw test -B
+
   frontend:
     name: Frontend (Build + Test)
     runs-on: ubuntu-latest

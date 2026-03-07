@@ -1,8 +1,12 @@
 services:
   user-service:
     build: ./services/user-service
+    container_name: co-user-service
     ports:
       - "8081:8081"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - AWS_REGION=${AWS_REGION:-us-east-1}
@@ -11,17 +15,87 @@ services:
       - DYNAMODB_USERS_TABLE=${DYNAMODB_USERS_TABLE:-consumer-ordering-users}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 60s
+    networks:
+      - co-network
+
+  plan-catalog-service:
+    build: ./services/plan-catalog-service
+    container_name: co-plan-catalog-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - DYNAMODB_PLANS_TABLE=${DYNAMODB_PLANS_TABLE:-consumer-ordering-plans}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - co-network
+
+  order-service:
+    build: ./services/order-service
+    container_name: co-order-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - DYNAMODB_ORDERS_TABLE=${DYNAMODB_ORDERS_TABLE:-consumer-ordering-orders}
+      - SQS_ORDER_EVENTS_QUEUE_URL=${SQS_ORDER_EVENTS_QUEUE_URL}
+      - PLAN_CATALOG_SERVICE_URL=http://plan-catalog-service:8082
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    restart: unless-stopped
+    depends_on:
+      plan-catalog-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - co-network
 
   frontend:
     build: ./frontend
+    container_name: co-frontend
     ports:
       - "3000:80"
+    restart: unless-stopped
     depends_on:
       user-service:
         condition: service_healthy
+      plan-catalog-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+    networks:
+      - co-network
+
+networks:
+  co-network:
+    driver: bridge
