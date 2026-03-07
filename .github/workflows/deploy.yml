@@ -194,6 +194,8 @@ jobs:
     needs: [detect-changes, deploy-backend, build-frontend]
     if: ${{ always() && needs.detect-changes.result == 'success' && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -212,6 +214,21 @@ jobs:
               --services "consumer-ordering-dev-${svc}"
           done
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Get active URLs from Terraform state
+        id: urls
+        working-directory: infrastructure
+        run: |
+          terraform init -input=false > /dev/null
+          echo "site=https://$(terraform output -raw cloudfront_domain)" >> "$GITHUB_OUTPUT"
+          echo "api=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "cognito_pool=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
+          echo "cognito_client=$(terraform output -raw cognito_client_id)" >> "$GITHUB_OUTPUT"
+
       - name: Deployment summary
         run: |
           echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
@@ -223,3 +240,12 @@ jobs:
           echo "|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
           echo "| Backend | ${{ needs.deploy-backend.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Frontend | ${{ needs.build-frontend.result }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Active URLs" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Resource | URL |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------|-----|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Frontend | ${{ steps.urls.outputs.site }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| API Gateway | ${{ steps.urls.outputs.api }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cognito Pool ID | \`${{ steps.urls.outputs.cognito_pool }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Cognito Client ID | \`${{ steps.urls.outputs.cognito_client }}\` |" >> "$GITHUB_STEP_SUMMARY"
