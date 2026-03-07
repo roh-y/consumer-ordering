@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
+import AdminLayout from './components/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
@@ -10,6 +12,10 @@ import PlanDetailPage from './pages/PlanDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrdersPage from './pages/OrdersPage'
 import OrderDetailPage from './pages/OrderDetailPage'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'
+import AdminPlansPage from './pages/admin/AdminPlansPage'
+import AdminUsersPage from './pages/admin/AdminUsersPage'
+import AdminOrdersPage from './pages/admin/AdminOrdersPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +68,19 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="plans" element={<AdminPlansPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="orders" element={<AdminOrdersPage />} />
+            </Route>
             <Route path="/" element={<Navigate to="/plans" replace />} />
           </Route>
         </Routes>

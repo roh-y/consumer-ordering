@@ -1,0 +1,7 @@
+locals {
+  prefix = "${var.project_name}-${var.environment}"
+}
+
+resource "aws_ses_email_identity" "sender" {
+  email = var.sender_email
+}

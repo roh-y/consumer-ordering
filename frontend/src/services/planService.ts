@@ -1,5 +1,5 @@
 import api from './api'
-import type { Plan } from '../types'
+import type { Plan, CreatePlanRequest, UpdatePlanRequest } from '../types'
 
 export const planService = {
   getPlans: () =>
@@ -7,4 +7,13 @@ export const planService = {
 
   getPlan: (planId: string) =>
     api.get<Plan>(`/plans/${planId}`).then((r) => r.data),
+
+  createPlan: (data: CreatePlanRequest) =>
+    api.post<Plan>('/plans', data).then((r) => r.data),
+
+  updatePlan: (planId: string, data: UpdatePlanRequest) =>
+    api.put<Plan>(`/plans/${planId}`, data).then((r) => r.data),
+
+  deletePlan: (planId: string) =>
+    api.delete(`/plans/${planId}`),
 }

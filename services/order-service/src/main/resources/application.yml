@@ -33,6 +33,8 @@ app:
     order-events-queue-url: ${SQS_ORDER_EVENTS_QUEUE_URL:}
   plan-catalog-service:
     url: ${PLAN_CATALOG_SERVICE_URL:http://localhost:8082}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 aws:
   region: ${AWS_REGION:us-east-1}

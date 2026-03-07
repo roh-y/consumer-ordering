@@ -104,4 +104,49 @@ resource "aws_cloudwatch_dashboard" "ecs" {
   })
 }
 
+# --- SQS Queue Depth Widget (appended to dashboard if queue name provided) ---
+
+resource "aws_cloudwatch_dashboard" "sqs" {
+  count          = var.sqs_queue_name != "" ? 1 : 0
+  dashboard_name = "${local.prefix}-sqs"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title   = "SQS Queue Depth"
+          metrics = [["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", var.sqs_queue_name]]
+          period  = 300
+          stat    = "Average"
+          region  = data.aws_region.current.name
+          view    = "timeSeries"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          title = "SQS Messages Sent/Received"
+          metrics = [
+            ["AWS/SQS", "NumberOfMessagesSent", "QueueName", var.sqs_queue_name],
+            ["AWS/SQS", "NumberOfMessagesReceived", "QueueName", var.sqs_queue_name]
+          ]
+          period = 300
+          stat   = "Sum"
+          region = data.aws_region.current.name
+          view   = "timeSeries"
+        }
+      }
+    ]
+  })
+}
+
 data "aws_region" "current" {}

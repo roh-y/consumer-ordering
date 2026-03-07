@@ -1,0 +1,27 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+app:
+  sqs:
+    order-events-queue-url: ${SQS_ORDER_EVENTS_QUEUE_URL:}
+  ses:
+    from-email: ${SES_FROM_EMAIL:noreply@example.com}
+
+aws:
+  region: ${AWS_REGION:us-east-1}

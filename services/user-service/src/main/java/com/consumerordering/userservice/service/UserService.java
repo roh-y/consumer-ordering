@@ -82,10 +82,19 @@ public class UserService {
         if (request.getLastName() != null) user.setLastName(request.getLastName());
         if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
         if (request.getAddress() != null) user.setAddress(request.getAddress());
+        if (request.getPlanId() != null) user.setPlanId(request.getPlanId());
         user.setUpdatedAt(Instant.now());
 
         userRepository.update(user);
         return toProfileResponse(user);
+    }
+
+    public void updatePlanId(String userId, String planId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setPlanId(planId);
+        user.setUpdatedAt(Instant.now());
+        userRepository.update(user);
     }
 
     private ProfileResponse toProfileResponse(User user) {

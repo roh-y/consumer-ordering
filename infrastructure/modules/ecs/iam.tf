@@ -78,6 +78,15 @@ resource "aws_iam_policy" "ecs_task" {
         Resource = var.sqs_queue_arns
       },
       {
+        Sid    = "SESAccess"
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+        ]
+        Resource = "*"
+      },
+      {
         Sid    = "CognitoAccess"
         Effect = "Allow"
         Action = [

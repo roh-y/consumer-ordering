@@ -92,3 +92,19 @@ resource "aws_cognito_user_pool_client" "main" {
     refresh_token = "days"
   }
 }
+
+# --- Cognito User Pool Groups ---
+
+resource "aws_cognito_user_group" "admin" {
+  name         = "admin"
+  user_pool_id = aws_cognito_user_pool.main.id
+  description  = "Admin users with full access"
+  precedence   = 1
+}
+
+resource "aws_cognito_user_group" "user" {
+  name         = "user"
+  user_pool_id = aws_cognito_user_pool.main.id
+  description  = "Regular users"
+  precedence   = 10
+}

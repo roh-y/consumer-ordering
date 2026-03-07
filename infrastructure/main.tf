@@ -39,6 +39,14 @@ module "sqs" {
   environment  = var.environment
 }
 
+# --- SES ---
+module "ses" {
+  source       = "./modules/ses"
+  project_name = var.project_name
+  environment  = var.environment
+  sender_email = var.ses_sender_email
+}
+
 # --- IAM ---
 module "iam" {
   source       = "./modules/iam"
@@ -60,10 +68,11 @@ module "iam" {
   ]
 
   # GitHub Actions OIDC
-  aws_region                 = var.aws_region
-  github_repository          = var.github_repository
-  s3_frontend_bucket_arn     = module.cloudfront.s3_bucket_arn
-  cloudfront_distribution_id = module.cloudfront.distribution_id
+  aws_region                  = var.aws_region
+  github_repository           = var.github_repository
+  github_actions_admin_access = var.github_actions_admin_access
+  s3_frontend_bucket_arn      = module.cloudfront.s3_bucket_arn
+  cloudfront_distribution_id  = module.cloudfront.distribution_id
 }
 
 # --- Monitoring (log groups must exist before ECS tasks start) ---
@@ -73,11 +82,13 @@ module "monitoring" {
   environment  = var.environment
 
   ecs_cluster_name = "${var.project_name}-${var.environment}-cluster"
+  sqs_queue_name   = module.sqs.order_events_queue_name
 
   services = {
     "user-service"         = 8081
     "plan-catalog-service" = 8082
     "order-service"        = 8083
+    "notification-service" = 8084
   }
 }
 
@@ -149,6 +160,21 @@ module "ecs" {
         DYNAMODB_TABLE_NAME        = module.dynamodb.orders_table_name
         SQS_ORDER_EVENTS_QUEUE_URL = module.sqs.order_events_queue_url
         PLAN_CATALOG_SERVICE_URL   = "__ALB_DNS__"
+        USER_SERVICE_URL           = "__ALB_DNS__"
+      }
+    }
+
+    "notification-service" = {
+      port          = 8084
+      health_path   = "/actuator/health"
+      cpu           = var.ecs_service_cpu
+      memory        = var.ecs_service_memory
+      desired_count = var.ecs_desired_count
+      environment = {
+        SERVER_PORT                = "8084"
+        AWS_REGION                 = var.aws_region
+        SQS_ORDER_EVENTS_QUEUE_URL = module.sqs.order_events_queue_url
+        SES_FROM_EMAIL             = var.ses_sender_email
       }
     }
   }

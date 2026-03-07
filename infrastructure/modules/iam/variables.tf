@@ -53,3 +53,9 @@ variable "cloudfront_distribution_id" {
   type        = string
   default     = ""
 }
+
+variable "github_actions_admin_access" {
+  description = "Grant GitHub Actions role AdministratorAccess for full Terraform deploy/destroy"
+  type        = bool
+  default     = true
+}

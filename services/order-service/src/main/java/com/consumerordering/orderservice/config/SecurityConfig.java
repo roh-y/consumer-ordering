@@ -28,11 +28,11 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
-                // All order endpoints require JWT
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> {})
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtRoleConverter()))
             );
 
         return http.build();

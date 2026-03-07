@@ -1,0 +1,84 @@
+# Destroy all infrastructure (one-click, with confirmation).
+# Empties S3 buckets and ECR repos first since Terraform can't destroy non-empty ones.
+
+name: Destroy All
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-all
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  PROJECT: consumer-ordering
+  ENVIRONMENT: dev
+
+jobs:
+  destroy:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    if: ${{ inputs.confirm == 'destroy' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: infrastructure
+        run: terraform init
+
+      - name: Get resource names from Terraform
+        id: resources
+        working-directory: infrastructure
+        run: |
+          echo "s3_bucket=$(terraform output -raw s3_frontend_bucket 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+          echo "ecr_repos=$(terraform output -json ecr_repository_urls 2>/dev/null | jq -r 'keys[]' || true)" >> "$GITHUB_OUTPUT"
+
+      - name: Empty S3 frontend bucket
+        if: ${{ steps.resources.outputs.s3_bucket != '' }}
+        run: |
+          echo "Emptying S3 bucket: ${{ steps.resources.outputs.s3_bucket }}"
+          aws s3 rm s3://${{ steps.resources.outputs.s3_bucket }} --recursive || true
+
+      - name: Delete ECR images
+        run: |
+          for service in user-service plan-catalog-service order-service notification-service; do
+            repo="${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-${service}"
+            echo "Cleaning ECR repo: ${repo}"
+            image_ids=$(aws ecr list-images --repository-name "${repo}" --query 'imageIds[*]' --output json 2>/dev/null || echo "[]")
+            if [ "$image_ids" != "[]" ] && [ -n "$image_ids" ]; then
+              aws ecr batch-delete-image --repository-name "${repo}" --image-ids "$image_ids" || true
+            fi
+          done
+
+      - name: Terraform Destroy
+        working-directory: infrastructure
+        run: terraform destroy -auto-approve
+
+      - name: Destroy summary
+        run: |
+          echo "## Destroy All — Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "All infrastructure has been destroyed." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "To redeploy, run the **Deploy All** workflow." >> "$GITHUB_STEP_SUMMARY"

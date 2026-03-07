@@ -14,7 +14,11 @@ export default function OrderDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  const { data: order, isLoading, error } = useQuery<OrderResponse>({
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery<OrderResponse>({
     queryKey: ['order', orderId],
     queryFn: () => orderService.getOrder(orderId!),
     enabled: !!orderId,
@@ -38,9 +42,7 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">
-        Order not found.
-      </div>
+      <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">Order not found.</div>
     )
   }
 
@@ -53,10 +55,18 @@ export default function OrderDetailPage() {
         &larr; Back to Orders
       </button>
 
+      {order.status === 'ACTIVE' && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-sm text-green-800">
+          Your plan is active. A confirmation email has been sent.
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-gray-900">Order Details</h1>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
+          <span
+            className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}
+          >
             {order.status}
           </span>
         </div>
@@ -84,7 +94,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {order.status === 'PENDING' && (
+        {(order.status === 'PENDING' || order.status === 'ACTIVE') && (
           <button
             onClick={() => cancelMutation.mutate()}
             disabled={cancelMutation.isPending}

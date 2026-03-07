@@ -33,15 +33,16 @@ public class SecurityConfig {
                     "/api/users/login",
                     "/api/users/confirm",
                     "/api/users/refresh",
+                    "/api/users/internal/**",
                     "/actuator/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
-                // Everything else requires a valid JWT
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> {})
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtRoleConverter()))
             );
 
         return http.build();

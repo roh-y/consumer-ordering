@@ -1,5 +1,6 @@
 package com.consumerordering.orderservice.controller;
 
+import com.consumerordering.orderservice.model.dto.ChangePlanRequest;
 import com.consumerordering.orderservice.model.dto.CreateOrderRequest;
 import com.consumerordering.orderservice.model.dto.OrderResponse;
 import com.consumerordering.orderservice.service.OrderService;
@@ -24,7 +25,8 @@ public class OrderController {
     public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal Jwt jwt,
                                                       @Valid @RequestBody CreateOrderRequest request) {
         String userId = jwt.getSubject();
-        OrderResponse order = orderService.createOrder(userId, request);
+        String userEmail = jwt.getClaimAsString("email");
+        OrderResponse order = orderService.createOrder(userId, request, userEmail);
         return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 
@@ -46,5 +48,14 @@ public class OrderController {
                                                       @PathVariable String orderId) {
         String userId = jwt.getSubject();
         return ResponseEntity.ok(orderService.cancelOrder(orderId, userId));
+    }
+
+    @PostMapping("/change-plan")
+    public ResponseEntity<OrderResponse> changePlan(@AuthenticationPrincipal Jwt jwt,
+                                                     @Valid @RequestBody ChangePlanRequest request) {
+        String userId = jwt.getSubject();
+        String userEmail = jwt.getClaimAsString("email");
+        OrderResponse order = orderService.changePlan(userId, request, userEmail);
+        return ResponseEntity.status(HttpStatus.CREATED).body(order);
     }
 }

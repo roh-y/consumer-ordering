@@ -10,6 +10,7 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -24,6 +25,10 @@ public class UserRepository {
     public UserRepository(DynamoDbEnhancedClient enhancedClient,
                           @Value("${app.dynamodb.users-table}") String tableName) {
         this.userTable = enhancedClient.table(tableName, TableSchema.fromBean(User.class));
+    }
+
+    public List<User> findAll() {
+        return userTable.scan().items().stream().toList();
     }
 
     public void save(User user) {

@@ -41,6 +41,7 @@ export interface UpdateProfileRequest {
   lastName?: string
   phoneNumber?: string
   address?: string
+  planId?: string
 }
 
 export interface Plan {
@@ -52,8 +53,28 @@ export interface Plan {
   features: string[]
 }
 
+export interface CreatePlanRequest {
+  name: string
+  description: string
+  pricePerMonth: number
+  dataGB: number
+  features: string[]
+}
+
+export interface UpdatePlanRequest {
+  name?: string
+  description?: string
+  pricePerMonth?: number
+  dataGB?: number
+  features?: string[]
+}
+
 export interface CreateOrderRequest {
   planId: string
+}
+
+export interface ChangePlanRequest {
+  newPlanId: string
 }
 
 export interface OrderResponse {
@@ -65,4 +86,17 @@ export interface OrderResponse {
   status: string
   createdAt: string
   updatedAt: string
+}
+
+export interface UserStatsResponse {
+  totalUsers: number
+  usersWithPlan: number
+  planDistribution: Record<string, number>
+}
+
+export interface OrderStatsResponse {
+  totalOrders: number
+  activeOrders: number
+  totalMonthlyRevenue: number
+  ordersByPlan: Record<string, number>
 }

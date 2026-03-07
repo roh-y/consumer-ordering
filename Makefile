@@ -1,12 +1,12 @@
-.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all
+.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-notification-service test-notification-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all export-data import-data
 
 # ========================
 # Top-Level Targets
 # ========================
 
-build: build-user-service build-plan-catalog-service build-order-service build-frontend ## Build all services
+build: build-user-service build-plan-catalog-service build-order-service build-notification-service build-frontend ## Build all services
 
-test: test-user-service test-plan-catalog-service test-order-service test-frontend ## Run all tests
+test: test-user-service test-plan-catalog-service test-order-service test-notification-service test-frontend ## Run all tests
 
 up: ## Start all services with Docker Compose
 	docker compose up -d --build
@@ -14,7 +14,7 @@ up: ## Start all services with Docker Compose
 down: ## Stop all services
 	docker compose down
 
-clean: clean-user-service clean-plan-catalog-service clean-order-service clean-frontend ## Clean all build artifacts
+clean: clean-user-service clean-plan-catalog-service clean-order-service clean-notification-service clean-frontend ## Clean all build artifacts
 
 setup: ## Run developer onboarding (usage: make setup NAME=yourname)
 	./scripts/dev-setup.sh $(NAME)
@@ -62,6 +62,19 @@ clean-order-service:
 	cd services/order-service && ./mvnw clean
 
 # ========================
+# Notification Service
+# ========================
+
+build-notification-service: ## Build notification-service
+	cd services/notification-service && ./mvnw package -DskipTests
+
+test-notification-service: ## Run notification-service tests
+	cd services/notification-service && ./mvnw test
+
+clean-notification-service:
+	cd services/notification-service && ./mvnw clean
+
+# ========================
 # Frontend
 # ========================
 
@@ -88,6 +101,16 @@ tf-apply: ## Apply Terraform changes
 	cd infrastructure/environments/dev && terraform apply
 
 # ========================
+# Data Export/Import
+# ========================
+
+export-data: ## Export DynamoDB tables and Cognito users
+	./scripts/export-data.sh
+
+import-data: ## Import DynamoDB data from export (usage: make import-data DIR=data-exports/YYYYMMDD_HHMMSS)
+	./scripts/import-data.sh $(DIR)
+
+# ========================
 # Deploy
 # ========================
 
@@ -109,6 +132,7 @@ deploy-backend: ## Build, push, and deploy all backend services
 	$(MAKE) deploy-service SERVICE=user-service
 	$(MAKE) deploy-service SERVICE=plan-catalog-service
 	$(MAKE) deploy-service SERVICE=order-service
+	$(MAKE) deploy-service SERVICE=notification-service
 
 deploy-frontend: ## Build and deploy frontend to S3/CloudFront
 	cd frontend && VITE_API_URL=$$(cd ../infrastructure/environments/dev && terraform output -raw api_gateway_endpoint) npm run build

@@ -2,7 +2,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 
 export default function Layout() {
-  const { isAuthenticated, logout } = useAuthStore()
+  const { isAuthenticated, isAdmin, logout } = useAuthStore()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -14,7 +14,7 @@ export default function Layout() {
     <div className="min-h-screen bg-gray-50">
       {/* Navigation bar */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link to="/" className="text-lg font-bold text-indigo-600">
             Wireless Plans
           </Link>
@@ -30,6 +30,11 @@ export default function Layout() {
                 <Link to="/profile" className="text-gray-600 hover:text-indigo-600">
                   Profile
                 </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="text-indigo-600 font-medium hover:text-indigo-800">
+                    Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="text-gray-600 hover:text-red-600"
@@ -52,7 +57,7 @@ export default function Layout() {
       </nav>
 
       {/* Page content */}
-      <main className="max-w-md mx-auto px-4 py-6">
+      <main className="max-w-4xl mx-auto px-4 py-6">
         <Outlet />
       </main>
     </div>

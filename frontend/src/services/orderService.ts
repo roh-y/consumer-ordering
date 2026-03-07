@@ -1,5 +1,5 @@
 import api from './api'
-import type { CreateOrderRequest, OrderResponse } from '../types'
+import type { CreateOrderRequest, ChangePlanRequest, OrderResponse } from '../types'
 
 export const orderService = {
   createOrder: (data: CreateOrderRequest) =>
@@ -13,4 +13,7 @@ export const orderService = {
 
   cancelOrder: (orderId: string) =>
     api.put<OrderResponse>(`/orders/${orderId}/cancel`).then((r) => r.data),
+
+  changePlan: (data: ChangePlanRequest) =>
+    api.post<OrderResponse>('/orders/change-plan', data).then((r) => r.data),
 }

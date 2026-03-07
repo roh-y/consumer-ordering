@@ -65,6 +65,7 @@ services:
       - DYNAMODB_ORDERS_TABLE=${DYNAMODB_ORDERS_TABLE:-consumer-ordering-orders}
       - SQS_ORDER_EVENTS_QUEUE_URL=${SQS_ORDER_EVENTS_QUEUE_URL}
       - PLAN_CATALOG_SERVICE_URL=http://plan-catalog-service:8082
+      - USER_SERVICE_URL=http://user-service:8081
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     restart: unless-stopped
@@ -73,6 +74,34 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - co-network
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: co-notification-service
+    ports:
+      - "8084:8084"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - SQS_ORDER_EVENTS_QUEUE_URL=${SQS_ORDER_EVENTS_QUEUE_URL}
+      - SES_FROM_EMAIL=${SES_FROM_EMAIL:-noreply@example.com}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    restart: unless-stopped
+    depends_on:
+      order-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3

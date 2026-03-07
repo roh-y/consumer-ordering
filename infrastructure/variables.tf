@@ -48,10 +48,24 @@ variable "ecs_desired_count" {
   default     = 1
 }
 
+# --- SES ---
+
+variable "ses_sender_email" {
+  description = "Email address to use as SES sender (must be verified)"
+  type        = string
+  default     = "noreply@example.com"
+}
+
 # --- GitHub Actions ---
 
 variable "github_repository" {
   description = "GitHub repository (owner/repo) for OIDC trust"
   type        = string
   default     = "roh-y/consumer-ordering"
+}
+
+variable "github_actions_admin_access" {
+  description = "Grant GitHub Actions role AdministratorAccess for full Terraform deploy/destroy from CI"
+  type        = bool
+  default     = true
 }

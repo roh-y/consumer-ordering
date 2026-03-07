@@ -36,7 +36,7 @@ data "aws_iam_policy_document" "github_actions_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["repo:${var.github_repository}:*"]
     }
   }
 }
@@ -146,7 +146,52 @@ resource "aws_iam_role" "github_actions" {
 }
 
 resource "aws_iam_role_policy" "github_actions_deploy" {
+  count  = var.github_actions_admin_access ? 0 : 1
   name   = "${var.project_name}-${var.environment}-github-actions-deploy"
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions_deploy.json
+}
+
+# --- Admin access for full Terraform deploy/destroy from CI ---
+
+resource "aws_iam_role_policy_attachment" "github_actions_admin" {
+  count      = var.github_actions_admin_access ? 1 : 0
+  role       = aws_iam_role.github_actions.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+resource "aws_iam_role_policy" "github_actions_terraform_state" {
+  count = var.github_actions_admin_access ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-github-actions-tf-state"
+  role  = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "TerraformStateBucket"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+        ]
+        Resource = [
+          "arn:aws:s3:::consumer-ordering-terraform-state",
+          "arn:aws:s3:::consumer-ordering-terraform-state/*",
+        ]
+      },
+      {
+        Sid    = "TerraformLockTable"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem",
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/consumer-ordering-terraform-locks"
+      },
+    ]
+  })
 }

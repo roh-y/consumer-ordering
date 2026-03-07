@@ -31,11 +31,14 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
-                // POST/PUT/DELETE require JWT (admin)
+                // POST/PUT/DELETE require ADMIN role
+                .requestMatchers(HttpMethod.POST, "/api/plans").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/plans/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/plans/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> {})
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtRoleConverter()))
             );
 
         return http.build();

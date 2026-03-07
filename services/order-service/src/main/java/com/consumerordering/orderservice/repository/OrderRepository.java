@@ -47,6 +47,10 @@ public class OrderRepository {
                 .toList();
     }
 
+    public List<Order> findAll() {
+        return orderTable.scan().items().stream().toList();
+    }
+
     public void update(Order order) {
         orderTable.updateItem(order);
     }

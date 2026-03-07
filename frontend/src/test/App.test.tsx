@@ -12,6 +12,19 @@ vi.mock('../services/planService', () => ({
       { planId: '4', name: 'Unlimited Plus', pricePerMonth: 90, description: 'Top plan', dataGB: -1, features: ['5G Access', 'HD Streaming', 'Hotspot', 'International'] },
     ]),
     getPlan: vi.fn(),
+    createPlan: vi.fn(),
+    updatePlan: vi.fn(),
+    deletePlan: vi.fn(),
+  },
+}))
+
+vi.mock('../services/adminService', () => ({
+  adminService: {
+    getUsers: vi.fn().mockResolvedValue([]),
+    getUserStats: vi.fn().mockResolvedValue({ totalUsers: 0, usersWithPlan: 0, planDistribution: {} }),
+    getOrders: vi.fn().mockResolvedValue([]),
+    getOrderStats: vi.fn().mockResolvedValue({ totalOrders: 0, activeOrders: 0, totalMonthlyRevenue: 0, ordersByPlan: {} }),
+    getUser: vi.fn(),
   },
 }))
 
@@ -40,5 +53,10 @@ describe('App', () => {
       expect(screen.getByText('Premium')).toBeInTheDocument()
       expect(screen.getByText('Unlimited Plus')).toBeInTheDocument()
     })
+  })
+
+  it('does not show Admin link for non-admin users', () => {
+    render(<App />)
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 })

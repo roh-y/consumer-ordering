@@ -13,3 +13,7 @@ output "order_events_dlq_url" {
 output "order_events_dlq_arn" {
   value = aws_sqs_queue.order_events_dlq.arn
 }
+
+output "order_events_queue_name" {
+  value = aws_sqs_queue.order_events.name
+}

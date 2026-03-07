@@ -29,3 +29,9 @@ variable "alarm_sns_topic_arn" {
   type        = string
   default     = ""
 }
+
+variable "sqs_queue_name" {
+  description = "SQS queue name for monitoring dashboard"
+  type        = string
+  default     = ""
+}
