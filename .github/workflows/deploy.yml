@@ -136,7 +136,6 @@ jobs:
         working-directory: infrastructure
         run: |
           terraform init -input=false > /dev/null
-          echo "api_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
           echo "s3_bucket=$(terraform output -raw s3_frontend_bucket)" >> "$GITHUB_OUTPUT"
           echo "cf_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
 
@@ -154,8 +153,6 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: frontend
-        env:
-          VITE_API_URL: ${{ steps.infra.outputs.api_url }}
 
       - name: Sync hashed assets (immutable cache)
         run: |
