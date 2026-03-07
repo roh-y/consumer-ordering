@@ -131,6 +131,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Get infra outputs from Terraform state
+        id: infra
+        working-directory: infrastructure
+        run: |
+          terraform init -input=false > /dev/null
+          echo "api_url=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
+          echo "s3_bucket=$(terraform output -raw s3_frontend_bucket)" >> "$GITHUB_OUTPUT"
+          echo "cf_distribution_id=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
@@ -142,60 +162,27 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Determine API URL
-        id: api-url
-        run: |
-          if [ -n "${{ needs.terraform.outputs.api_gateway_endpoint }}" ]; then
-            echo "url=${{ needs.terraform.outputs.api_gateway_endpoint }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "url=${{ secrets.API_GATEWAY_ENDPOINT }}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build
         run: npm run build
         working-directory: frontend
         env:
-          VITE_API_URL: ${{ steps.api-url.outputs.url }}
-
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ env.PROJECT }}-${{ env.ENVIRONMENT }}-github-actions
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Determine S3 bucket
-        id: bucket
-        run: |
-          if [ -n "${{ needs.terraform.outputs.s3_frontend_bucket }}" ]; then
-            echo "name=${{ needs.terraform.outputs.s3_frontend_bucket }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=${{ secrets.S3_FRONTEND_BUCKET }}" >> "$GITHUB_OUTPUT"
-          fi
+          VITE_API_URL: ${{ steps.infra.outputs.api_url }}
 
       - name: Sync hashed assets (immutable cache)
         run: |
-          aws s3 sync frontend/dist/assets s3://${{ steps.bucket.outputs.name }}/assets \
+          aws s3 sync frontend/dist/assets s3://${{ steps.infra.outputs.s3_bucket }}/assets \
             --cache-control "public, max-age=31536000, immutable"
 
       - name: Sync remaining files (no-cache)
         run: |
-          aws s3 sync frontend/dist s3://${{ steps.bucket.outputs.name }} \
+          aws s3 sync frontend/dist s3://${{ steps.infra.outputs.s3_bucket }} \
             --exclude "assets/*" \
             --cache-control "no-cache, no-store, must-revalidate"
-
-      - name: Determine CloudFront distribution ID
-        id: cf
-        run: |
-          if [ -n "${{ needs.terraform.outputs.cloudfront_distribution_id }}" ]; then
-            echo "id=${{ needs.terraform.outputs.cloudfront_distribution_id }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "id=${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Invalidate CloudFront cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ steps.cf.outputs.id }} \
+            --distribution-id ${{ steps.infra.outputs.cf_distribution_id }} \
             --paths "/*"
 
   # ---------------------------------------------------------
