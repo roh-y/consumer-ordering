@@ -21,3 +21,37 @@ variable "vpc_cidr" {
   type        = string
   default     = "10.0.0.0/16"
 }
+
+variable "developers" {
+  description = "List of developer names to provision IAM users for"
+  type        = list(string)
+  default     = []
+}
+
+# --- ECS Sizing ---
+
+variable "ecs_service_cpu" {
+  description = "CPU units for each ECS service (256, 512, 1024, etc.)"
+  type        = number
+  default     = 512
+}
+
+variable "ecs_service_memory" {
+  description = "Memory (MB) for each ECS service"
+  type        = number
+  default     = 1024
+}
+
+variable "ecs_desired_count" {
+  description = "Desired number of tasks per ECS service"
+  type        = number
+  default     = 1
+}
+
+# --- GitHub Actions ---
+
+variable "github_repository" {
+  description = "GitHub repository (owner/repo) for OIDC trust"
+  type        = string
+  default     = "roh-y/consumer-ordering"
+}

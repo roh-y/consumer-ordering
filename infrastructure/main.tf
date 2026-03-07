@@ -31,3 +31,151 @@ module "dynamodb" {
   project_name = var.project_name
   environment  = var.environment
 }
+
+# --- SQS ---
+module "sqs" {
+  source       = "./modules/sqs"
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+# --- IAM ---
+module "iam" {
+  source       = "./modules/iam"
+  project_name = var.project_name
+  environment  = var.environment
+  developers   = var.developers
+
+  dynamodb_table_arns = [
+    module.dynamodb.users_table_arn,
+    module.dynamodb.plans_table_arn,
+    module.dynamodb.orders_table_arn,
+  ]
+
+  cognito_user_pool_arn = module.cognito.user_pool_arn
+
+  sqs_queue_arns = [
+    module.sqs.order_events_queue_arn,
+    module.sqs.order_events_dlq_arn,
+  ]
+
+  # GitHub Actions OIDC
+  aws_region                 = var.aws_region
+  github_repository          = var.github_repository
+  s3_frontend_bucket_arn     = module.cloudfront.s3_bucket_arn
+  cloudfront_distribution_id = module.cloudfront.distribution_id
+}
+
+# --- Monitoring (log groups must exist before ECS tasks start) ---
+module "monitoring" {
+  source       = "./modules/monitoring"
+  project_name = var.project_name
+  environment  = var.environment
+
+  ecs_cluster_name = "${var.project_name}-${var.environment}-cluster"
+
+  services = {
+    "user-service"         = 8081
+    "plan-catalog-service" = 8082
+    "order-service"        = 8083
+  }
+}
+
+# --- ECS / Fargate ---
+module "ecs" {
+  source       = "./modules/ecs"
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  log_group_names = module.monitoring.log_group_names
+
+  dynamodb_table_arns = [
+    module.dynamodb.users_table_arn,
+    module.dynamodb.plans_table_arn,
+    module.dynamodb.orders_table_arn,
+  ]
+
+  sqs_queue_arns = [
+    module.sqs.order_events_queue_arn,
+    module.sqs.order_events_dlq_arn,
+  ]
+
+  cognito_user_pool_arn = module.cognito.user_pool_arn
+
+  services = {
+    "user-service" = {
+      port          = 8081
+      health_path   = "/actuator/health"
+      cpu           = var.ecs_service_cpu
+      memory        = var.ecs_service_memory
+      desired_count = var.ecs_desired_count
+      environment = {
+        SERVER_PORT          = "8081"
+        AWS_REGION           = var.aws_region
+        COGNITO_USER_POOL_ID = module.cognito.user_pool_id
+        COGNITO_CLIENT_ID    = module.cognito.client_id
+        DYNAMODB_TABLE_NAME  = module.dynamodb.users_table_name
+      }
+    }
+
+    "plan-catalog-service" = {
+      port          = 8082
+      health_path   = "/actuator/health"
+      cpu           = var.ecs_service_cpu
+      memory        = var.ecs_service_memory
+      desired_count = var.ecs_desired_count
+      environment = {
+        SERVER_PORT         = "8082"
+        AWS_REGION          = var.aws_region
+        DYNAMODB_TABLE_NAME = module.dynamodb.plans_table_name
+      }
+    }
+
+    "order-service" = {
+      port          = 8083
+      health_path   = "/actuator/health"
+      cpu           = var.ecs_service_cpu
+      memory        = var.ecs_service_memory
+      desired_count = var.ecs_desired_count
+      environment = {
+        SERVER_PORT                = "8083"
+        AWS_REGION                 = var.aws_region
+        DYNAMODB_TABLE_NAME        = module.dynamodb.orders_table_name
+        SQS_ORDER_EVENTS_QUEUE_URL = module.sqs.order_events_queue_url
+        PLAN_CATALOG_SERVICE_URL   = "__ALB_DNS__"
+      }
+    }
+  }
+}
+
+# --- API Gateway ---
+module "api_gateway" {
+  source       = "./modules/api-gateway"
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+
+  cognito_user_pool_id = module.cognito.user_pool_id
+  cognito_client_id    = module.cognito.client_id
+
+  alb_listener_arn      = module.ecs.alb_listener_arn
+  alb_dns_name          = module.ecs.alb_dns_name
+  alb_security_group_id = module.ecs.alb_security_group_id
+
+  private_subnet_ids = module.vpc.private_subnet_ids
+  vpc_id             = module.vpc.vpc_id
+}
+
+# --- CloudFront + S3 ---
+module "cloudfront" {
+  source       = "./modules/cloudfront"
+  project_name = var.project_name
+  environment  = var.environment
+
+  api_gateway_endpoint = module.api_gateway.api_endpoint
+  api_gateway_id       = module.api_gateway.api_id
+}
