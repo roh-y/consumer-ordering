@@ -2,15 +2,6 @@
 # Set these env vars or pass via Terraform outputs:
 #   COGNITO_USER_POOL_ID, COGNITO_CLIENT_ID, DYNAMODB_USERS_TABLE, AWS_REGION
 
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # Cognito JWKS endpoint — Spring uses this to validate JWT signatures
-          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}/.well-known/jwks.json
-          issuer-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}
-
 logging:
   level:
     com.consumerordering: DEBUG

@@ -90,6 +90,20 @@ resource "aws_apigatewayv2_route" "refresh" {
   target    = "integrations/${aws_apigatewayv2_integration.alb.id}"
 }
 
+# --- Public Plan Browsing Route ---
+
+resource "aws_apigatewayv2_route" "get_plans" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/plans"
+  target    = "integrations/${aws_apigatewayv2_integration.alb.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_plan_by_id" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "GET /api/plans/{planId}"
+  target    = "integrations/${aws_apigatewayv2_integration.alb.id}"
+}
+
 # --- Authenticated Catch-All Route ---
 
 resource "aws_apigatewayv2_route" "authenticated" {

@@ -129,9 +129,10 @@ module "ecs" {
       memory        = var.ecs_service_memory
       desired_count = var.ecs_desired_count
       environment = {
-        SERVER_PORT         = "8082"
-        AWS_REGION          = var.aws_region
-        DYNAMODB_TABLE_NAME = module.dynamodb.plans_table_name
+        SERVER_PORT          = "8082"
+        AWS_REGION           = var.aws_region
+        COGNITO_USER_POOL_ID = module.cognito.user_pool_id
+        DYNAMODB_TABLE_NAME  = module.dynamodb.plans_table_name
       }
     }
 
@@ -144,6 +145,7 @@ module "ecs" {
       environment = {
         SERVER_PORT                = "8083"
         AWS_REGION                 = var.aws_region
+        COGNITO_USER_POOL_ID       = module.cognito.user_pool_id
         DYNAMODB_TABLE_NAME        = module.dynamodb.orders_table_name
         SQS_ORDER_EVENTS_QUEUE_URL = module.sqs.order_events_queue_url
         PLAN_CATALOG_SERVICE_URL   = "__ALB_DNS__"

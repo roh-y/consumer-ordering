@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: user-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}/.well-known/jwks.json
+          issuer-uri: https://cognito-idp.${aws.region}.amazonaws.com/${app.cognito.user-pool-id}
 
 # Actuator — expose health and info endpoints for load balancer checks
 management:
@@ -33,3 +39,4 @@ app:
 # AWS region
 aws:
   region: ${AWS_REGION:us-east-1}
+
