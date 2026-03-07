@@ -115,7 +115,9 @@ consumer-ordering/
 ├── frontend/                  # React + Vite SPA
 ├── infrastructure/            # Terraform modules
 ├── scripts/                   # Setup + seed scripts
-├── .github/workflows/         # CI pipeline
+├── .github/workflows/         # CI + Deploy pipelines
+│   ├── ci.yml                 # Build & test on every push/PR
+│   └── deploy.yml             # Deploy to AWS on main after CI passes
 ├── docker-compose.yml
 └── Makefile
 ```
@@ -123,12 +125,22 @@ consumer-ordering/
 ## Useful Commands
 
 ```bash
-make build          # Build all services
-make test           # Run all tests
-make up             # Start with Docker Compose
-make down           # Stop Docker Compose
-make tf-plan        # Preview Terraform changes
-make tf-apply       # Apply Terraform changes
+# Build & Test
+make build              # Build all services
+make test               # Run all tests
+make up                 # Start with Docker Compose
+make down               # Stop Docker Compose
+
+# Terraform
+make tf-plan            # Preview Terraform changes
+make tf-apply           # Apply Terraform changes
+
+# Deploy to AWS
+make deploy-login       # Login to Amazon ECR
+make deploy-service SERVICE=user-service  # Deploy one service
+make deploy-backend     # Deploy all backend services
+make deploy-frontend    # Build & deploy frontend to S3/CloudFront
+make deploy-all         # Deploy everything (backend + frontend)
 ```
 
 ## Documentation

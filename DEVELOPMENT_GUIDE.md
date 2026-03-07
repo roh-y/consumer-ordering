@@ -178,3 +178,186 @@ make test
 | `ResourceNotFoundException` | DynamoDB table doesn't exist | Run `terraform apply` |
 | CORS error in browser | Backend not allowing frontend origin | Check `SecurityConfig.java` CORS config |
 | 401 on profile endpoint | Token expired | Login again or check refresh token logic |
+
+## How to Add a New Microservice
+
+Follow these steps when adding a new Spring Boot microservice (e.g., `notification-service`).
+
+### 1. Create the Spring Boot project
+
+```bash
+mkdir -p services/notification-service
+cd services/notification-service
+```
+
+Use Spring Initializr or copy an existing service's structure. Include:
+- `src/main/java/com/consumerordering/notificationservice/`
+- `src/main/resources/application.yml` and `application-dev.yml`
+- `pom.xml` with Spring Boot 3.4, Java 21
+- `mvnw` / `mvnw.cmd` (Maven wrapper)
+
+### 2. Add a Dockerfile
+
+Follow the existing pattern (multi-stage build):
+
+```dockerfile
+FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /app
+COPY . .
+RUN ./mvnw package -DskipTests -B
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8084
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+### 3. Add Terraform resources
+
+You need three things in your Terraform infrastructure:
+
+**ECR repository** — in `infrastructure/main.tf`, add the repo to the ECS module or create a new `aws_ecr_repository` resource.
+
+**ECS task definition + service** — add to the ECS module (`infrastructure/modules/ecs/`):
+- Task definition with the new container image, port, environment variables
+- ECS service with desired count and ALB target group
+
+**ALB target group + listener rule** — route traffic from the API Gateway or ALB to the new service on its port.
+
+### 4. Wire into `docker-compose.yml`
+
+Add a new service block:
+
+```yaml
+notification-service:
+  build: ./services/notification-service
+  container_name: co-notification-service
+  ports:
+    - "8084:8084"
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    - SPRING_PROFILES_ACTIVE=dev
+    - AWS_REGION=${AWS_REGION:-us-east-1}
+    # Add service-specific env vars here
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+    interval: 30s
+    timeout: 5s
+    retries: 3
+    start_period: 60s
+  networks:
+    - co-network
+```
+
+### 5. Add to CI workflow
+
+In `.github/workflows/ci.yml`, add a new job:
+
+```yaml
+notification-service:
+  name: Notification Service (Build + Test)
+  runs-on: ubuntu-latest
+  defaults:
+    run:
+      working-directory: services/notification-service
+  steps:
+    - uses: actions/checkout@v4
+    - name: Set up Java 21
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 21
+        cache: maven
+    - name: Build
+      run: ./mvnw package -DskipTests -B
+    - name: Test
+      run: ./mvnw test -B
+```
+
+### 6. Add to Deploy workflow
+
+In `.github/workflows/deploy.yml`, the deploy workflow auto-detects changes via paths-filter. Add the new filter:
+
+```yaml
+# In the detect-changes job, under the paths-filter filters:
+notification-service:
+  - 'services/notification-service/**'
+```
+
+And add it to the dynamic matrix builder:
+
+```bash
+if [ "${{ steps.changes.outputs.notification-service }}" == "true" ]; then
+  matrix=$(echo "$matrix" | jq -c '. + [{"service": "notification-service", "path": "services/notification-service"}]')
+fi
+```
+
+Update the `backend-any` output to include the new service.
+
+### 7. Add Makefile targets
+
+```makefile
+build-notification-service:
+	cd services/notification-service && ./mvnw package -DskipTests
+
+test-notification-service:
+	cd services/notification-service && ./mvnw test
+
+clean-notification-service:
+	cd services/notification-service && ./mvnw clean
+```
+
+Add `notification-service` to the `build`, `test`, `clean`, and `deploy-backend` aggregate targets.
+
+## How to Enhance an Existing Service
+
+The typical development loop for modifying an existing microservice:
+
+### Local development
+
+```bash
+# Start all services locally
+docker compose up -d --build
+
+# Or run just the service you're working on natively
+cd services/user-service
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Make changes, test locally, iterate.
+
+### Run tests
+
+```bash
+# Test just your service
+make test-user-service
+
+# Or run all tests
+make test
+```
+
+### Push to a feature branch
+
+```bash
+git checkout -b feature/my-change
+git add -A
+git commit -m "Add new endpoint to user service"
+git push -u origin feature/my-change
+```
+
+Open a pull request. The **CI workflow** runs automatically — builds and tests all services. Fix any failures before merging.
+
+### Merge to main
+
+Once the PR is approved and CI passes, merge to `main`. The **Deploy workflow** triggers automatically and:
+
+1. Detects which services changed (only your service, not others)
+2. Builds a new Docker image and pushes it to ECR
+3. Updates the ECS service to pull the new image
+4. Verifies the deployment is stable
+
+You don't need to do anything — the pipeline handles it. Check the **Actions** tab to monitor progress.
