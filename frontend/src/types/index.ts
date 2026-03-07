@@ -51,3 +51,18 @@ export interface Plan {
   dataGB: number
   features: string[]
 }
+
+export interface CreateOrderRequest {
+  planId: string
+}
+
+export interface OrderResponse {
+  orderId: string
+  userId: string
+  planId: string
+  planName: string
+  pricePerMonth: number
+  status: string
+  createdAt: string
+  updatedAt: string
+}

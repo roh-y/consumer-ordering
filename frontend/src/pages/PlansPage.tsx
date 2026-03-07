@@ -1,49 +1,38 @@
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { planService } from '../services/planService'
 import type { Plan } from '../types'
 
-// Mock data — will be replaced by API call to Plan Catalog Service in Phase 2
-const MOCK_PLANS: Plan[] = [
-  {
-    planId: 'basic',
-    name: 'Basic',
-    description: 'Perfect for light users who mostly use Wi-Fi',
-    pricePerMonth: 35,
-    dataGB: 5,
-    features: ['Unlimited talk & text', '5G access', '5 GB high-speed data', 'Mexico & Canada included'],
-  },
-  {
-    planId: 'standard',
-    name: 'Standard',
-    description: 'Great for everyday use with plenty of data',
-    pricePerMonth: 55,
-    dataGB: 15,
-    features: ['Unlimited talk & text', '5G Ultra Wideband', '15 GB high-speed data', 'Disney+ Basic included', 'Mexico & Canada included'],
-  },
-  {
-    planId: 'premium',
-    name: 'Premium',
-    description: 'Our best plan for power users and streamers',
-    pricePerMonth: 75,
-    dataGB: 50,
-    features: ['Unlimited talk & text', '5G Ultra Wideband', '50 GB premium data', 'Disney+, Hulu, ESPN+ included', '25 GB mobile hotspot', 'International texting'],
-  },
-  {
-    planId: 'unlimited',
-    name: 'Unlimited Plus',
-    description: 'Truly unlimited with no compromises',
-    pricePerMonth: 90,
-    dataGB: -1,
-    features: ['Unlimited talk & text', '5G Ultra Wideband', 'Unlimited premium data', 'Disney+, Hulu, ESPN+, Apple Music', '50 GB mobile hotspot', 'International calling & texting', 'Smartwatch & tablet plan included'],
-  },
-]
-
 export default function PlansPage() {
+  const navigate = useNavigate()
+  const { data: plans, isLoading, error } = useQuery<Plan[]>({
+    queryKey: ['plans'],
+    queryFn: planService.getPlans,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">
+        Failed to load plans. Please try again later.
+      </div>
+    )
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">Choose Your Plan</h1>
       <p className="text-gray-500 text-sm mb-6">Select the perfect wireless plan for your needs</p>
 
       <div className="space-y-4">
-        {MOCK_PLANS.map((plan) => (
+        {plans?.map((plan) => (
           <div
             key={plan.planId}
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
@@ -71,7 +60,10 @@ export default function PlansPage() {
               ))}
             </ul>
 
-            <button className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+            <button
+              onClick={() => navigate(`/plans/${plan.planId}`)}
+              className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+            >
               Select Plan
             </button>
           </div>

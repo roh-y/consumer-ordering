@@ -24,6 +24,9 @@ export default function Layout() {
                 <Link to="/plans" className="text-gray-600 hover:text-indigo-600">
                   Plans
                 </Link>
+                <Link to="/orders" className="text-gray-600 hover:text-indigo-600">
+                  Orders
+                </Link>
                 <Link to="/profile" className="text-gray-600 hover:text-indigo-600">
                   Profile
                 </Link>
