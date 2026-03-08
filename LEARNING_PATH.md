@@ -48,6 +48,34 @@ Suggested reading order for a new developer joining this project.
 10. **Read [CI_CD_GUIDE.md](CI_CD_GUIDE.md)** — How the pipeline works
 11. **Read [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** — How to add features
 
+## Week 5: AI Customer Support Agent (Phase 4)
+
+12. **Read [AWS_SERVICES_GUIDE.md](AWS_SERVICES_GUIDE.md)** — Focus on the Bedrock, Bedrock Agents, Knowledge Base, and OpenSearch Serverless sections
+13. **Read [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** — "How to Work with the Customer Support Agent" section covers setup, deployment, and modification
+14. **Read the Terraform modules** in this order:
+    - `infrastructure/modules/opensearch/main.tf` — How the vector store is configured
+    - `infrastructure/modules/bedrock/s3.tf` — S3 bucket for knowledge base docs
+    - `infrastructure/modules/bedrock/main.tf` — Agent, KB, action group, IAM roles
+    - `infrastructure/modules/lambda/main.tf` — Lambda functions and permissions
+15. **Read the Lambda code**:
+    - `services/recommendation-service/lambda/action_group/handler.py` — How DynamoDB is queried for the agent
+    - `services/recommendation-service/lambda/chat_api/handler.py` — How the API Gateway request becomes a Bedrock Agent invocation
+16. **Read the knowledge base documents**:
+    - `services/recommendation-service/knowledge-base/plans/` — Plan detail docs
+    - `services/recommendation-service/knowledge-base/faq/` — FAQ documents
+    - `services/recommendation-service/knowledge-base/comparison/` — Plan comparison guide
+    - `services/recommendation-service/knowledge-base/policies/` — Return/cancellation policy
+17. **Read the frontend integration**:
+    - `frontend/src/services/chatService.ts` — API client
+    - `frontend/src/store/chatStore.ts` — Chat state management (Zustand)
+    - `frontend/src/components/ChatWidget.tsx` — Chat UI component
+18. **Deploy and test the agent** — Follow the deployment steps in DEVELOPMENT_GUIDE.md, then open the chat widget and try these queries:
+    - "What plans do you offer?" (knowledge base retrieval)
+    - "Compare Standard and Premium" (knowledge base)
+    - "Show me my orders" (action group — DynamoDB)
+    - "Which plan is best for streaming?" (recommendation using KB context)
+19. **Trace the request** — Check CloudWatch Logs for both Lambda functions to see how the Bedrock Agent orchestrates KB retrieval and action group calls
+
 ## Ongoing
 
 As new phases are added, repeat the pattern:

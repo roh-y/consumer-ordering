@@ -52,12 +52,19 @@ jobs:
         working-directory: infrastructure
         run: |
           echo "s3_bucket=$(terraform output -raw s3_frontend_bucket 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+          echo "kb_s3_bucket=$(terraform output -raw kb_s3_bucket_name 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
 
       - name: Empty S3 frontend bucket
         if: ${{ steps.resources.outputs.s3_bucket != '' }}
         run: |
           echo "Emptying S3 bucket: ${{ steps.resources.outputs.s3_bucket }}"
           aws s3 rm s3://${{ steps.resources.outputs.s3_bucket }} --recursive || true
+
+      - name: Empty KB docs S3 bucket
+        if: ${{ steps.resources.outputs.kb_s3_bucket != '' }}
+        run: |
+          echo "Emptying KB S3 bucket: ${{ steps.resources.outputs.kb_s3_bucket }}"
+          aws s3 rm s3://${{ steps.resources.outputs.kb_s3_bucket }} --recursive || true
 
       - name: Delete ECR images
         run: |

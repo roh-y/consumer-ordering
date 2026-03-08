@@ -69,9 +69,51 @@ This application follows a **microservices architecture** where each service han
 - **Tech**: Node.js, TypeScript
 - **Purpose**: Consumes SQS messages, sends simulated notifications
 
-### Recommendation Service (Phase 4)
-- **Tech**: Python Lambda
-- **Purpose**: RAG-based plan recommendations using Bedrock + OpenSearch
+### Recommendation Service / Customer Support Agent (Phase 4)
+- **Tech**: Python 3.12 Lambda functions
+- **Purpose**: AI-powered customer support agent using Amazon Bedrock Agents
+- **Model**: Claude 3 Haiku (via Bedrock) for conversational responses
+- **Knowledge Base**: Plan docs, FAQs, comparisons, and policies stored in S3, embedded with Titan Embeddings v2, indexed in OpenSearch Serverless for RAG retrieval
+- **Two Lambda Functions**:
+  - `chat-api` — Receives `POST /api/agent/chat` from API Gateway, extracts userId from JWT, invokes the Bedrock Agent, and returns the streaming response
+  - `agent-actions` — Action group Lambda invoked by the Bedrock Agent to query DynamoDB (order status, user profile, plan listings)
+- **Capabilities**: Answer plan questions, compare plans, check order status, recommend plans based on needs, handle billing/policy queries
+- **Frontend**: Floating chat widget (bottom-right corner) visible only to authenticated users
+
+## Data Flow: Customer Support Chat
+
+Here's what happens when a user sends a message in the chat widget:
+
+```
+React ChatWidget           API Gateway           Chat API Lambda         Bedrock Agent
+    │                          │                       │                       │
+    │──POST /api/agent/chat──►│                       │                       │
+    │  {message, sessionId}   │──(JWT verified)──────►│                       │
+    │                          │                       │──invoke_agent()──────►│
+    │                          │                       │                       │
+    │                          │                       │   ┌──────────────────┤
+    │                          │                       │   │ 1. Check KB      │
+    │                          │                       │   │    (OpenSearch   │
+    │                          │                       │   │    vector search)│
+    │                          │                       │   │                  │
+    │                          │                       │   │ 2. Call Action   │
+    │                          │                       │   │    Group Lambda  │
+    │                          │                       │   │    (DynamoDB     │
+    │                          │                       │   │    queries)      │
+    │                          │                       │   │                  │
+    │                          │                       │   │ 3. Generate      │
+    │                          │                       │   │    response with │
+    │                          │                       │   │    Claude 3 Haiku│
+    │                          │                       │   └──────────────────┤
+    │                          │                       │◄──streaming response──│
+    │◄──{message, sessionId}───│◄──────────────────────│                       │
+```
+
+**Key points:**
+- The Bedrock Agent decides autonomously whether to query the knowledge base, call an action group, or both, based on the user's question
+- Session state (userId) is passed to the agent so it can look up user-specific data without the user providing their ID
+- Sessions are ephemeral — stored in Bedrock Agent Runtime, not persisted across page reloads
+- The knowledge base uses RAG: plan documents are chunked, embedded with Titan Embeddings v2, and stored as vectors in OpenSearch Serverless
 
 ## Data Flow: User Registration
 

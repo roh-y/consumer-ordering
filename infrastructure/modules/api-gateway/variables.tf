@@ -47,3 +47,17 @@ variable "vpc_id" {
   description = "VPC ID"
   type        = string
 }
+
+# --- Chat API Lambda (optional — for Bedrock Agent chat endpoint) ---
+
+variable "chat_api_lambda_invoke_arn" {
+  description = "Invoke ARN of the chat API Lambda function"
+  type        = string
+  default     = ""
+}
+
+variable "chat_api_lambda_function_name" {
+  description = "Function name of the chat API Lambda"
+  type        = string
+  default     = ""
+}

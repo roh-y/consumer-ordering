@@ -180,6 +180,42 @@ module "ecs" {
   }
 }
 
+# --- Bedrock Agent (Knowledge Base role created first — no OpenSearch dependency) ---
+module "bedrock" {
+  source       = "./modules/bedrock"
+  project_name = var.project_name
+  environment  = var.environment
+
+  opensearch_collection_arn = module.opensearch.collection_arn
+  action_group_lambda_arn   = module.lambda_functions.action_group_lambda_arn
+}
+
+# --- OpenSearch Serverless (vector store for Bedrock KB) ---
+module "opensearch" {
+  source       = "./modules/opensearch"
+  project_name = var.project_name
+  environment  = var.environment
+
+  bedrock_kb_role_arn = module.bedrock.kb_role_arn
+}
+
+# --- Lambda Functions (action group + chat API) ---
+module "lambda_functions" {
+  source       = "./modules/lambda"
+  project_name = var.project_name
+  environment  = var.environment
+
+  orders_table_name = module.dynamodb.orders_table_name
+  users_table_name  = module.dynamodb.users_table_name
+  plans_table_name  = module.dynamodb.plans_table_name
+  orders_table_arn  = module.dynamodb.orders_table_arn
+  users_table_arn   = module.dynamodb.users_table_arn
+  plans_table_arn   = module.dynamodb.plans_table_arn
+
+  bedrock_agent_id       = module.bedrock.agent_id
+  bedrock_agent_alias_id = module.bedrock.agent_alias_id
+}
+
 # --- API Gateway ---
 module "api_gateway" {
   source       = "./modules/api-gateway"
@@ -196,6 +232,10 @@ module "api_gateway" {
 
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_id             = module.vpc.vpc_id
+
+  # Chat API Lambda integration
+  chat_api_lambda_invoke_arn    = module.lambda_functions.chat_api_lambda_invoke_arn
+  chat_api_lambda_function_name = module.lambda_functions.chat_api_lambda_function_name
 }
 
 # --- CloudFront + S3 ---

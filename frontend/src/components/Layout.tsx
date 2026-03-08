@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import ChatWidget from './ChatWidget'
 
 export default function Layout() {
   const { isAuthenticated, isAdmin, logout } = useAuthStore()
@@ -63,6 +64,7 @@ export default function Layout() {
       <main className="max-w-4xl mx-auto px-4 py-6">
         <Outlet />
       </main>
+      <ChatWidget />
     </div>
   )
 }

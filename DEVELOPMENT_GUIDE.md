@@ -313,6 +313,153 @@ clean-notification-service:
 
 Add `notification-service` to the `build`, `test`, `clean`, and `deploy-backend` aggregate targets.
 
+## How to Work with the Customer Support Agent (Phase 4)
+
+The recommendation service is an AI-powered customer support agent built with Amazon Bedrock Agents. Unlike the Spring Boot services, it uses Python Lambda functions and AWS-managed AI services.
+
+### Architecture Overview
+
+```
+User → ChatWidget → API Gateway (POST /api/agent/chat)
+                         → Chat API Lambda (extracts JWT userId, invokes Bedrock Agent)
+                              → Bedrock Agent (Claude 3 Haiku)
+                                   ├── Knowledge Base (RAG via OpenSearch + S3)
+                                   └── Action Group Lambda (DynamoDB queries)
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `services/recommendation-service/knowledge-base/` | Markdown docs uploaded to S3 for RAG |
+| `services/recommendation-service/lambda/action_group/handler.py` | DynamoDB queries (orders, users, plans) |
+| `services/recommendation-service/lambda/chat_api/handler.py` | API Gateway → Bedrock Agent bridge |
+| `infrastructure/modules/bedrock/main.tf` | Agent, KB, action group, S3 bucket |
+| `infrastructure/modules/opensearch/main.tf` | OpenSearch Serverless vector collection |
+| `infrastructure/modules/lambda/main.tf` | Lambda functions + IAM roles |
+| `frontend/src/components/ChatWidget.tsx` | Floating chat UI component |
+| `frontend/src/store/chatStore.ts` | Zustand store for chat state |
+| `frontend/src/services/chatService.ts` | API client for chat endpoint |
+
+### Prerequisites
+
+Before deploying the agent, you must enable two foundation models in the AWS Bedrock console:
+
+1. Go to **Amazon Bedrock** → **Model access** in the AWS Console
+2. Request access to:
+   - **Anthropic Claude 3 Haiku** (for the agent's conversational model)
+   - **Amazon Titan Text Embeddings V2** (for the knowledge base embeddings)
+3. Wait for access to be granted (usually instant)
+
+### Initial Deployment
+
+```bash
+# 1. Deploy infrastructure (creates OpenSearch, Bedrock Agent, Lambdas, S3 bucket)
+cd infrastructure
+terraform init
+terraform apply    # OpenSearch collection takes 5-10 minutes to activate
+
+# 2. Upload knowledge base documents and trigger ingestion
+make upload-kb-docs    # Syncs docs to S3, starts Bedrock ingestion (2-5 min)
+
+# 3. Deploy the frontend with the chat widget
+make deploy-frontend
+```
+
+Or use the combined target:
+```bash
+make deploy-agent    # Runs terraform apply + upload-kb-docs
+```
+
+### How to Update Knowledge Base Content
+
+The agent's knowledge comes from markdown files in `services/recommendation-service/knowledge-base/`. To update what the agent knows:
+
+1. **Edit or add markdown files** in the knowledge-base directory:
+   - `plans/` — One file per plan (features, pricing, best-for scenarios)
+   - `faq/` — Frequently asked questions (general, billing)
+   - `comparison/` — Plan comparison tables and guides
+   - `policies/` — Return policy, cancellation rules
+
+2. **Re-upload and re-ingest**:
+   ```bash
+   make upload-kb-docs
+   ```
+   This syncs the files to S3 and triggers a Bedrock ingestion job. The agent will use the updated content within 2-5 minutes.
+
+3. **Test** in the Bedrock console "Test" panel or via the frontend chat widget.
+
+### How to Add a New Action to the Agent
+
+The agent can call "actions" — Lambda functions that query live data. To add a new action:
+
+1. **Add the handler function** in `services/recommendation-service/lambda/action_group/handler.py`:
+   ```python
+   def get_something_new(params):
+       # Query DynamoDB or another data source
+       table = dynamodb.Table(os.environ["SOME_TABLE_NAME"])
+       response = table.get_item(Key={"id": params.get("id")})
+       return response.get("Item", {})
+   ```
+
+2. **Add routing** in the same file's `handler()` function:
+   ```python
+   elif api_path == "/getSomethingNew" and http_method == "GET":
+       result = get_something_new(params)
+   ```
+
+3. **Update the OpenAPI schema** in `infrastructure/modules/bedrock/main.tf` inside the `aws_bedrockagent_agent_action_group` resource. Add a new path to the `api_schema` payload:
+   ```hcl
+   "/getSomethingNew" = {
+     get = {
+       summary     = "Get something new"
+       operationId = "getSomethingNew"
+       parameters  = [...]
+       responses   = { ... }
+     }
+   }
+   ```
+
+4. **Apply infrastructure changes and redeploy**:
+   ```bash
+   cd infrastructure && terraform apply
+   ```
+
+### How to Change the Agent's Personality or Instructions
+
+The agent's system prompt is in `infrastructure/modules/bedrock/main.tf` inside the `aws_bedrockagent_agent` resource's `instruction` field. Edit it and run `terraform apply`.
+
+### How to Test the Agent
+
+**From the AWS Console:**
+1. Go to **Amazon Bedrock** → **Agents**
+2. Select the agent → click **Test** in the right panel
+3. Try queries like "What plans do you offer?" or "Compare Standard and Premium"
+
+**From the frontend:**
+1. Log in to the app
+2. Click the chat bubble (bottom-right corner)
+3. Test queries:
+   - "What plans do you offer?" (knowledge base lookup)
+   - "Compare Standard and Premium" (knowledge base)
+   - "Show me my orders" (action group — DynamoDB query)
+   - "Which plan is best for streaming?" (recommendation)
+
+**Debugging:**
+- Check CloudWatch Logs for the Lambda functions:
+  - `/aws/lambda/consumer-ordering-dev-agent-actions` — Action group invocations
+  - `/aws/lambda/consumer-ordering-dev-chat-api` — Chat API requests
+- Each Lambda logs the incoming event, making it easy to trace issues
+
+### Frontend Chat Widget
+
+The `ChatWidget` component (`frontend/src/components/ChatWidget.tsx`) is a floating button that expands into a chat panel. Key behaviors:
+
+- Only visible to **authenticated users** (checks `useAuthStore().isAuthenticated`)
+- Messages are stored in a Zustand store (`chatStore.ts`) — **not persisted** across page reloads
+- Session ID is managed per conversation — clearing the chat starts a new agent session
+- The widget uses the app's indigo color theme and Tailwind CSS
+
 ## How to Enhance an Existing Service
 
 The typical development loop for modifying an existing microservice:

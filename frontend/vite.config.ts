@@ -8,6 +8,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api/agent': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
       '/api/plans': {
         target: 'http://localhost:8082',
         changeOrigin: true,

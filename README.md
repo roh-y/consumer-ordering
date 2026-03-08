@@ -9,7 +9,7 @@ A customer can:
 2. **Browse** wireless plans (Basic, Standard, Premium, Unlimited)
 3. **Select** a plan and go through a simulated checkout
 4. **View** their profile and order history
-5. **Get recommendations** powered by AI (RAG with Amazon Bedrock)
+5. **Chat with an AI support agent** — a floating chat widget powered by Amazon Bedrock Agents that can answer plan questions, check order status, recommend plans, and handle billing inquiries using RAG (Retrieval-Augmented Generation)
 
 ## Architecture
 
@@ -18,7 +18,9 @@ Frontend (React)  →  API Gateway  →  Microservices (Spring Boot on ECS/Farga
                                   →  DynamoDB (NoSQL database)
                                   →  Cognito (Authentication)
                                   →  SQS/SNS (Messaging)
-                                  →  Bedrock + OpenSearch (AI Recommendations)
+                                  →  Lambda → Bedrock Agent (Claude 3 Haiku)
+                                              ├── Knowledge Base (OpenSearch + S3)
+                                              └── Action Group (DynamoDB queries)
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
@@ -31,6 +33,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | Backend | Java 21, Spring Boot 3.4, AWS SDK v2 |
 | Auth | Amazon Cognito (JWT tokens) |
 | Database | Amazon DynamoDB |
+| AI/Chat | Amazon Bedrock (Claude 3 Haiku), OpenSearch Serverless |
 | Infrastructure | Terraform |
 | CI/CD | GitHub Actions |
 | Containers | Docker, ECS/Fargate |
@@ -108,16 +111,21 @@ Open http://localhost:5173 in your browser.
 consumer-ordering/
 ├── services/
 │   ├── user-service/          # Spring Boot — auth + profiles
-│   ├── plan-catalog-service/  # (Phase 2)
-│   ├── order-service/         # (Phase 2)
-│   ├── notification-service/  # (Phase 3)
-│   └── recommendation-service/# (Phase 4)
-├── frontend/                  # React + Vite SPA
+│   ├── plan-catalog-service/  # Spring Boot — plan CRUD
+│   ├── order-service/         # Spring Boot — orders + SQS events
+│   ├── notification-service/  # Spring Boot — SQS consumer + SES emails
+│   └── recommendation-service/# Python Lambda — AI support agent
+│       ├── knowledge-base/    #   Plan docs, FAQs, policies (uploaded to S3)
+│       └── lambda/            #   action_group/ + chat_api/ handlers
+├── frontend/                  # React + Vite SPA (includes ChatWidget)
 ├── infrastructure/            # Terraform modules
-├── scripts/                   # Setup + seed scripts
+│   └── modules/
+│       ├── bedrock/           #   Bedrock Agent, Knowledge Base, S3
+│       ├── opensearch/        #   OpenSearch Serverless (vector store)
+│       ├── lambda/            #   Lambda functions for agent
+│       └── ...                #   vpc, cognito, dynamodb, ecs, etc.
+├── scripts/                   # Setup + seed + KB upload scripts
 ├── .github/workflows/         # CI + Deploy pipelines
-│   ├── ci.yml                 # Build & test on every push/PR
-│   └── deploy.yml             # Deploy to AWS on main after CI passes
 ├── docker-compose.yml
 └── Makefile
 ```
@@ -134,6 +142,10 @@ make down               # Stop Docker Compose
 # Terraform
 make tf-plan            # Preview Terraform changes
 make tf-apply           # Apply Terraform changes
+
+# Bedrock Agent
+make upload-kb-docs     # Upload knowledge base docs to S3, trigger ingestion
+make deploy-agent       # Deploy agent infrastructure + upload KB docs
 
 # Deploy to AWS
 make deploy-login       # Login to Amazon ECR
@@ -157,3 +169,8 @@ This project uses AWS free tier where possible:
 - **Cognito**: Free for first 50,000 MAU
 - **DynamoDB**: On-demand pricing, essentially $0 for demo usage
 - **VPC + NAT Gateway**: ~$1/day when running (destroy when not in use)
+- **OpenSearch Serverless**: ~$24/month minimum (2 OCU baseline for vector search collection)
+- **Bedrock (Claude 3 Haiku + Titan Embeddings)**: Pay-per-token, ~$1-2/month at demo usage
+- **Lambda**: First 1M requests/month free, essentially $0
+
+**Total with AI agent**: ~$25-30/month. Without deploying the Bedrock/OpenSearch modules, cost stays under $5/month.

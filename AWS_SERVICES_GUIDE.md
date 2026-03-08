@@ -97,14 +97,54 @@ When a user logs in, Cognito returns three tokens:
 ### Bedrock
 **What it is**: AWS's managed service for foundation models (like Claude). You send a prompt, get a response. No ML infrastructure to manage.
 
-**Why we use it**: The recommendation service uses Claude (via Bedrock) to generate personalized plan recommendations based on user preferences and usage patterns.
+**Why we use it**: The customer support agent uses Claude 3 Haiku (via Bedrock) to have natural conversations about wireless plans, check order status, and make recommendations.
+
+**How it's configured**: See `infrastructure/modules/bedrock/main.tf`.
+
+### Bedrock Agents
+**What it is**: A higher-level Bedrock feature that orchestrates an AI agent. Unlike raw model invocation, an agent can:
+- **Search a Knowledge Base** (RAG) — automatically retrieves relevant documents before answering
+- **Call Action Groups** — invokes Lambda functions to query live data (like DynamoDB)
+- **Maintain conversation sessions** — remembers context across multiple messages
+
+**Key components in our project**:
+- **Agent** — The orchestrator. Uses Claude 3 Haiku as its foundation model. Has a system prompt (instruction) defining its personality and responsibilities.
+- **Knowledge Base** — A collection of markdown documents (plan details, FAQs, policies) that the agent can search. Documents are chunked, embedded with Titan Text Embeddings V2, and stored as vectors in OpenSearch Serverless.
+- **Data Source** — S3 bucket containing the knowledge base documents. When you run `make upload-kb-docs`, documents are synced to S3 and an ingestion job converts them to vector embeddings.
+- **Action Group** — A Lambda function with an OpenAPI schema that the agent can call. Our action group handles four operations: `getOrderStatus`, `getOrdersByUser`, `getUserProfile`, `listPlans`.
+- **Agent Alias** — A stable identifier (like `live`) used for runtime invocation. Required to call `invoke_agent()`.
+
+**How the agent decides what to do**: When a user sends "What plans do you offer?", the agent recognizes this as a knowledge question and searches the KB. When a user asks "Show me my orders", the agent calls the `getOrdersByUser` action. It can also combine both — e.g., "Which plan is best for my usage?" might search the KB for plan details, call `getUserProfile` to see the current plan, and then generate a recommendation.
+
+**Cost**: Claude 3 Haiku is ~$0.25 per million input tokens and ~$1.25 per million output tokens. At demo usage levels, this is under $1/month.
+
+### Bedrock Knowledge Base
+**What it is**: A managed RAG pipeline. You point it at an S3 bucket of documents, and Bedrock handles chunking, embedding, and indexing automatically.
+
+**Embedding model**: Amazon Titan Text Embeddings V2 converts text chunks into 1024-dimensional vectors. Similar text produces similar vectors, enabling semantic search.
+
+**How ingestion works**:
+1. Upload markdown files to S3 (`make upload-kb-docs`)
+2. Bedrock's ingestion job reads each file, splits it into chunks (~300 tokens each)
+3. Each chunk is converted to a vector using Titan Embeddings V2
+4. Vectors are stored in OpenSearch Serverless
+5. When the agent needs context, it converts the user's question to a vector and finds the most similar document chunks
 
 ### OpenSearch Serverless
-**What it is**: A search and analytics engine. We use it for **vector search** — finding items that are semantically similar to a query.
+**What it is**: A search and analytics engine. We use it specifically for **vector search** — finding document chunks that are semantically similar to a user's question.
+
+**VECTORSEARCH collection type**: OpenSearch Serverless collections have different types. We use VECTORSEARCH, which is optimized for storing and querying vector embeddings. It creates the vector index automatically when Bedrock ingests documents.
 
 **What is RAG?**: Retrieval-Augmented Generation. Instead of asking an AI model to answer from its training data alone, we first search our own data (plan descriptions, features) for relevant context, then include that context in the prompt. This makes responses more accurate and grounded in our actual plan offerings.
 
-**Cost**: OpenSearch Serverless has a minimum cost of ~$24/month per collection. Consider this before deploying.
+**Policies**: OpenSearch Serverless uses three types of policies instead of traditional cluster configuration:
+- **Encryption policy** — Enables encryption at rest (AWS-owned key)
+- **Network policy** — Controls access (we use public access so Bedrock can reach it)
+- **Data access policy** — IAM-based permissions (grants the Bedrock KB role read/write access)
+
+**How it's configured**: See `infrastructure/modules/opensearch/main.tf`.
+
+**Cost**: OpenSearch Serverless has a minimum cost of ~$24/month per collection (2 OCUs baseline). This is the largest cost component of the AI agent. Consider this before deploying.
 
 ## CDN & DNS
 

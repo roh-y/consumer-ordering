@@ -1,4 +1,4 @@
-.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-notification-service test-notification-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all export-data import-data
+.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-notification-service test-notification-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all export-data import-data upload-kb-docs deploy-agent
 
 # ========================
 # Top-Level Targets
@@ -143,6 +143,15 @@ deploy-frontend: ## Build and deploy frontend to S3/CloudFront
 	aws cloudfront create-invalidation --distribution-id $$CF_DIST --paths "/*"
 
 deploy-all: deploy-backend deploy-frontend ## Deploy all services and frontend
+
+# ========================
+# Bedrock Agent
+# ========================
+
+upload-kb-docs: ## Upload knowledge base docs to S3 and trigger ingestion
+	./scripts/upload-kb-docs.sh
+
+deploy-agent: tf-apply upload-kb-docs ## Deploy Bedrock agent infrastructure and upload KB docs
 
 # ========================
 # Help

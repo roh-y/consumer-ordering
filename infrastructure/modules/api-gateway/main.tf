@@ -104,6 +104,38 @@ resource "aws_apigatewayv2_route" "get_plan_by_id" {
   target    = "integrations/${aws_apigatewayv2_integration.alb.id}"
 }
 
+# --- Chat API Lambda Integration (Bedrock Agent) ---
+
+resource "aws_apigatewayv2_integration" "chat_lambda" {
+  count = var.chat_api_lambda_invoke_arn != "" ? 1 : 0
+
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = var.chat_api_lambda_invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "chat" {
+  count = var.chat_api_lambda_invoke_arn != "" ? 1 : 0
+
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /api/agent/chat"
+  target    = "integrations/${aws_apigatewayv2_integration.chat_lambda[0].id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_lambda_permission" "api_gw_chat" {
+  count = var.chat_api_lambda_function_name != "" ? 1 : 0
+
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = var.chat_api_lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*/api/agent/chat"
+}
+
 # --- Authenticated Catch-All Route ---
 
 resource "aws_apigatewayv2_route" "authenticated" {
