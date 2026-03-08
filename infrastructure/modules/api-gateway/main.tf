@@ -107,7 +107,7 @@ resource "aws_apigatewayv2_route" "get_plan_by_id" {
 # --- Chat API Lambda Integration (Bedrock Agent) ---
 
 resource "aws_apigatewayv2_integration" "chat_lambda" {
-  count = var.chat_api_lambda_invoke_arn != "" ? 1 : 0
+  count = var.enable_chat_api ? 1 : 0
 
   api_id                 = aws_apigatewayv2_api.main.id
   integration_type       = "AWS_PROXY"
@@ -116,7 +116,7 @@ resource "aws_apigatewayv2_integration" "chat_lambda" {
 }
 
 resource "aws_apigatewayv2_route" "chat" {
-  count = var.chat_api_lambda_invoke_arn != "" ? 1 : 0
+  count = var.enable_chat_api ? 1 : 0
 
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /api/agent/chat"
@@ -127,7 +127,7 @@ resource "aws_apigatewayv2_route" "chat" {
 }
 
 resource "aws_lambda_permission" "api_gw_chat" {
-  count = var.chat_api_lambda_function_name != "" ? 1 : 0
+  count = var.enable_chat_api ? 1 : 0
 
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"

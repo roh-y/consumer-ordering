@@ -234,6 +234,7 @@ module "api_gateway" {
   vpc_id             = module.vpc.vpc_id
 
   # Chat API Lambda integration
+  enable_chat_api               = true
   chat_api_lambda_invoke_arn    = module.lambda_functions.chat_api_lambda_invoke_arn
   chat_api_lambda_function_name = module.lambda_functions.chat_api_lambda_function_name
 }

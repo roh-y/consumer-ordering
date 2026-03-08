@@ -319,8 +319,8 @@ jobs:
           echo "api=$(terraform output -raw api_gateway_endpoint)" >> "$GITHUB_OUTPUT"
           echo "cognito_pool=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
           echo "cognito_client=$(terraform output -raw cognito_client_id)" >> "$GITHUB_OUTPUT"
-          echo "bedrock_agent_id=$(terraform output -raw bedrock_agent_id)" >> "$GITHUB_OUTPUT"
-          echo "kb_id=$(terraform output -raw bedrock_knowledge_base_id)" >> "$GITHUB_OUTPUT"
+          echo "bedrock_agent_id=$(terraform output -raw bedrock_agent_id 2>/dev/null || echo 'N/A')" >> "$GITHUB_OUTPUT"
+          echo "kb_id=$(terraform output -raw bedrock_knowledge_base_id 2>/dev/null || echo 'N/A')" >> "$GITHUB_OUTPUT"
 
       - name: Deployment summary
         run: |
