@@ -491,7 +491,8 @@ resource "aws_bedrockagent_agent_alias" "live" {
   agent_alias_name = "live"
 
   # Force alias update when agent config changes (publishes new version)
-  description = "Model: ${aws_bedrockagent_agent.support.foundation_model} | Actions: ${aws_bedrockagent_agent_action_group.customer_actions.action_group_name}"
+  # Hash of instruction + schema ensures any content change triggers a new alias version
+  description = substr("v${sha256("${aws_bedrockagent_agent.support.instruction}${aws_bedrockagent_agent_action_group.customer_actions.description}")}", 0, 200)
 
   depends_on = [
     aws_bedrockagent_agent_knowledge_base_association.plans,
