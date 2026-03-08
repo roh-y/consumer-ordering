@@ -187,6 +187,7 @@ module "bedrock" {
   environment  = var.environment
 
   opensearch_collection_arn = module.opensearch.collection_arn
+  opensearch_index_created  = module.opensearch.index_created
   action_group_lambda_arn   = module.lambda_functions.action_group_lambda_arn
 }
 

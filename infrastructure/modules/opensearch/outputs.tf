@@ -12,3 +12,8 @@ output "collection_name" {
   description = "OpenSearch Serverless collection name"
   value       = aws_opensearchserverless_collection.kb.name
 }
+
+output "index_created" {
+  description = "Signals that the vector index has been created"
+  value       = null_resource.create_vector_index.id
+}

@@ -3,6 +3,9 @@ locals {
   collection_name = "${var.project_name}-${var.environment}-kb"
 }
 
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 # --- OpenSearch Serverless Collection (VECTORSEARCH) ---
 
 resource "aws_opensearchserverless_security_policy" "encryption" {
@@ -79,7 +82,31 @@ resource "aws_opensearchserverless_access_policy" "kb" {
           ]
         }
       ]
-      Principal = [var.bedrock_kb_role_arn]
+      Principal = [
+        var.bedrock_kb_role_arn,
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
+      ]
     }
   ])
+}
+
+# --- Create Vector Index ---
+# The index must exist before Bedrock Knowledge Base can be created.
+
+resource "null_resource" "create_vector_index" {
+  depends_on = [
+    aws_opensearchserverless_collection.kb,
+    aws_opensearchserverless_access_policy.kb,
+  ]
+
+  provisioner "local-exec" {
+    command = "python3 ${path.module}/../../../scripts/create-opensearch-index.py ${aws_opensearchserverless_collection.kb.collection_endpoint}"
+    environment = {
+      AWS_DEFAULT_REGION = data.aws_region.current.name
+    }
+  }
+
+  triggers = {
+    collection_endpoint = aws_opensearchserverless_collection.kb.collection_endpoint
+  }
 }

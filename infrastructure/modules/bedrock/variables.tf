@@ -17,3 +17,8 @@ variable "action_group_lambda_arn" {
   description = "ARN of the action group Lambda function"
   type        = string
 }
+
+variable "opensearch_index_created" {
+  description = "Dependency signal — vector index has been created in OpenSearch"
+  type        = string
+}

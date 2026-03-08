@@ -63,9 +63,16 @@ resource "aws_iam_role_policy" "kb" {
 
 # --- Knowledge Base ---
 
+# Ensure the vector index is created before KB references it
+resource "terraform_data" "wait_for_index" {
+  input = var.opensearch_index_created
+}
+
 resource "aws_bedrockagent_knowledge_base" "plans" {
   name     = "${local.prefix}-plans-kb"
   role_arn = aws_iam_role.kb.arn
+
+  depends_on = [terraform_data.wait_for_index]
 
   knowledge_base_configuration {
     type = "VECTOR"
