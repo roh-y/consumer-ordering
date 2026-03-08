@@ -30,18 +30,18 @@ export default function LoginPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl shadow-sm p-8">
-          <h1 className="text-2xl font-bold text-[--color-text-primary] text-center mb-1">Welcome back</h1>
-          <p className="text-sm text-[--color-text-secondary] text-center mb-6">Sign in to manage your plan</p>
+          <h1 className="text-2xl font-bold text-text-primary text-center mb-1">Welcome back</h1>
+          <p className="text-sm text-text-secondary text-center mb-6">Sign in to manage your plan</p>
 
           {error && (
-            <div className="bg-red-50 text-[--color-error] p-3 rounded-xl mb-4 text-sm">
+            <div className="bg-red-50 text-error p-3 rounded-xl mb-4 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+              <label htmlFor="email" className="block text-xs font-medium text-text-secondary mb-2">
                 Email
               </label>
               <input
@@ -50,13 +50,13 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 h-12 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]"
+                className="w-full px-4 h-12 border border-border-default rounded-lg text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                 placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+              <label htmlFor="password" className="block text-xs font-medium text-text-secondary mb-2">
                 Password
               </label>
               <input
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 h-12 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]"
+                className="w-full px-4 h-12 border border-border-default rounded-lg text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900"
                 placeholder="••••••••"
               />
             </div>
@@ -73,15 +73,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[--color-primary] hover:bg-[--color-primary-hover] active:bg-[--color-primary-pressed] active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+              className="w-full bg-primary hover:bg-primary-hover active:bg-primary-pressed active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-[--color-text-secondary] mt-6">
+          <p className="text-center text-sm text-text-secondary mt-6">
             Don't have an account?{' '}
-            <Link to="/register" className="text-[--color-primary] hover:text-[--color-primary-hover] font-medium focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded">
+            <Link to="/register" className="text-primary hover:text-primary-hover font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded">
               Register
             </Link>
           </p>

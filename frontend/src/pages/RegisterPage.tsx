@@ -49,25 +49,25 @@ export default function RegisterPage() {
   }
 
   const inputClass =
-    'w-full px-4 h-12 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]'
+    'w-full px-4 h-12 border border-border-default rounded-lg text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900'
 
   if (step === 'confirm') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-sm p-8">
-            <h1 className="text-2xl font-bold text-[--color-text-primary] text-center mb-1">Verify Email</h1>
-            <p className="text-sm text-[--color-text-secondary] text-center mb-6">
+            <h1 className="text-2xl font-bold text-text-primary text-center mb-1">Verify Email</h1>
+            <p className="text-sm text-text-secondary text-center mb-6">
               We sent a verification code to <strong>{form.email}</strong>
             </p>
 
             {error && (
-              <div className="bg-red-50 text-[--color-error] p-3 rounded-xl mb-4 text-sm">{error}</div>
+              <div className="bg-red-50 text-error p-3 rounded-xl mb-4 text-sm">{error}</div>
             )}
 
             <form onSubmit={handleConfirm} className="space-y-4">
               <div>
-                <label htmlFor="code" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                <label htmlFor="code" className="block text-xs font-medium text-text-secondary mb-2">
                   Confirmation Code
                 </label>
                 <input
@@ -83,7 +83,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[--color-primary] hover:bg-[--color-primary-hover] active:bg-[--color-primary-pressed] active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+                className="w-full bg-primary hover:bg-primary-hover active:bg-primary-pressed active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 {loading ? 'Verifying...' : 'Verify'}
               </button>
@@ -98,17 +98,17 @@ export default function RegisterPage() {
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl shadow-sm p-8">
-          <h1 className="text-2xl font-bold text-[--color-text-primary] text-center mb-1">Create your account</h1>
-          <p className="text-sm text-[--color-text-secondary] text-center mb-6">Join to browse and subscribe to plans</p>
+          <h1 className="text-2xl font-bold text-text-primary text-center mb-1">Create your account</h1>
+          <p className="text-sm text-text-secondary text-center mb-6">Join to browse and subscribe to plans</p>
 
           {error && (
-            <div className="bg-red-50 text-[--color-error] p-3 rounded-xl mb-4 text-sm">{error}</div>
+            <div className="bg-red-50 text-error p-3 rounded-xl mb-4 text-sm">{error}</div>
           )}
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                <label htmlFor="firstName" className="block text-xs font-medium text-text-secondary mb-2">
                   First Name
                 </label>
                 <input
@@ -121,7 +121,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                <label htmlFor="lastName" className="block text-xs font-medium text-text-secondary mb-2">
                   Last Name
                 </label>
                 <input
@@ -136,7 +136,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+              <label htmlFor="email" className="block text-xs font-medium text-text-secondary mb-2">
                 Email
               </label>
               <input
@@ -152,7 +152,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+              <label htmlFor="phone" className="block text-xs font-medium text-text-secondary mb-2">
                 Phone (optional)
               </label>
               <input
@@ -167,7 +167,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+              <label htmlFor="password" className="block text-xs font-medium text-text-secondary mb-2">
                 Password
               </label>
               <input
@@ -186,15 +186,15 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[--color-primary] hover:bg-[--color-primary-hover] active:bg-[--color-primary-pressed] active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+              className="w-full bg-primary hover:bg-primary-hover active:bg-primary-pressed active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <p className="text-center text-sm text-[--color-text-secondary] mt-6">
+          <p className="text-center text-sm text-text-secondary mt-6">
             Already have an account?{' '}
-            <Link to="/login" className="text-[--color-primary] hover:text-[--color-primary-hover] font-medium focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded">
+            <Link to="/login" className="text-primary hover:text-primary-hover font-medium focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded">
               Sign in
             </Link>
           </p>

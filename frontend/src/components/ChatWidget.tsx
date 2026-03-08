@@ -52,7 +52,7 @@ export default function ChatWidget() {
       {!isOpen && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 w-14 h-14 bg-[--color-primary] hover:bg-[--color-primary-hover] active:scale-95 text-white rounded-full flex items-center justify-center transition-all duration-150 z-50 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+          className="fixed bottom-5 right-5 w-14 h-14 bg-primary hover:bg-primary-hover active:scale-95 text-white rounded-full flex items-center justify-center transition-all duration-150 z-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           style={{ boxShadow: '0 4px 14px rgba(255, 56, 92, 0.45)' }}
           aria-label="Open chat"
         >
@@ -64,9 +64,9 @@ export default function ChatWidget() {
 
       {/* Chat panel — full-screen on mobile, card on desktop */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:w-96 sm:h-[500px] sm:rounded-2xl bg-white sm:shadow-2xl sm:border sm:border-[--color-border-default] flex flex-col z-50">
+        <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:w-96 sm:h-[500px] sm:rounded-2xl bg-white sm:shadow-2xl sm:border sm:border-border-default flex flex-col z-50">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-[--color-primary] text-white sm:rounded-t-2xl shrink-0">
+          <div className="flex items-center justify-between px-4 py-3 bg-primary text-white sm:rounded-t-2xl shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-400 rounded-full" />
               <span className="font-medium text-sm">Support Assistant</span>
@@ -74,14 +74,14 @@ export default function ChatWidget() {
             <div className="flex gap-1 items-center">
               <button
                 onClick={clearChat}
-                className="text-white/70 hover:text-white text-xs min-h-[44px] px-3 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[--color-primary] rounded"
+                className="text-white/70 hover:text-white text-xs min-h-[44px] px-3 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded"
                 title="Clear chat"
               >
                 Clear
               </button>
               <button
                 onClick={() => setOpen(false)}
-                className="text-white/70 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[--color-primary] rounded"
+                className="text-white/70 hover:text-white min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary rounded"
                 aria-label="Close chat"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,8 +94,8 @@ export default function ChatWidget() {
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.length === 0 && (
-              <div className="text-center text-[--color-text-tertiary] text-sm mt-8">
-                <p className="font-medium text-[--color-text-secondary] mb-1">Hi! How can I help?</p>
+              <div className="text-center text-text-tertiary text-sm mt-8">
+                <p className="font-medium text-text-secondary mb-1">Hi! How can I help?</p>
                 <p>Ask about plans, orders, or billing.</p>
               </div>
             )}
@@ -107,8 +107,8 @@ export default function ChatWidget() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
                     msg.role === 'user'
-                      ? 'bg-[--color-primary] text-white'
-                      : 'bg-[--color-bg-secondary] text-[--color-text-primary]'
+                      ? 'bg-primary text-white'
+                      : 'bg-bg-secondary text-text-primary'
                   }`}
                 >
                   {msg.content}
@@ -117,7 +117,7 @@ export default function ChatWidget() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-[--color-bg-secondary] rounded-2xl px-4 py-2.5 text-sm text-[--color-text-tertiary]">
+                <div className="bg-bg-secondary rounded-2xl px-4 py-2.5 text-sm text-text-tertiary">
                   <span className="inline-flex gap-1">
                     <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
                     <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
@@ -130,7 +130,7 @@ export default function ChatWidget() {
           </div>
 
           {/* Input — safe area padding on mobile for notched devices */}
-          <div className="px-4 py-3 border-t border-[--color-border-subtle] shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="px-4 py-3 border-t border-border-subtle shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="flex gap-2">
               <input
                 ref={inputRef}
@@ -140,12 +140,12 @@ export default function ChatWidget() {
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message..."
                 disabled={isLoading}
-                className="flex-1 border border-[--color-border-default] rounded-full px-4 h-11 text-base sm:text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900] disabled:opacity-50"
+                className="flex-1 border border-border-default rounded-full px-4 h-11 text-base sm:text-sm focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 disabled:opacity-50"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="bg-[--color-primary] hover:bg-[--color-primary-hover] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+                className="bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full w-11 h-11 flex items-center justify-center shrink-0 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

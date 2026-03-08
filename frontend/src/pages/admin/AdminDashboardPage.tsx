@@ -15,7 +15,7 @@ export default function AdminDashboardPage() {
   if (loadingUsers || loadingOrders) {
     return (
       <div className="flex justify-center py-16">
-        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     )
   }
@@ -38,15 +38,15 @@ export default function AdminDashboardPage() {
             key={stat.label}
             className="bg-white rounded-xl shadow-sm p-5"
           >
-            <div className="text-xs font-medium text-[--color-text-secondary] uppercase tracking-wide">{stat.label}</div>
-            <div className="text-2xl font-bold text-[--color-text-primary] mt-1">{stat.value}</div>
+            <div className="text-xs font-medium text-text-secondary uppercase tracking-wide">{stat.label}</div>
+            <div className="text-2xl font-bold text-text-primary mt-1">{stat.value}</div>
           </div>
         ))}
       </div>
 
       {orderStats?.ordersByPlan && Object.keys(orderStats.ordersByPlan).length > 0 && (
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-base font-semibold text-[--color-text-primary] mb-4">Active Orders by Plan</h3>
+          <h3 className="text-base font-semibold text-text-primary mb-4">Active Orders by Plan</h3>
           <div className="space-y-3">
             {Object.entries(orderStats.ordersByPlan).map(([plan, count]) => {
               const maxCount = Math.max(...Object.values(orderStats.ordersByPlan))
@@ -54,12 +54,12 @@ export default function AdminDashboardPage() {
               return (
                 <div key={plan}>
                   <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-[--color-text-secondary]">{plan}</span>
-                    <span className="font-semibold text-[--color-text-primary]">{count}</span>
+                    <span className="text-text-secondary">{plan}</span>
+                    <span className="font-semibold text-text-primary">{count}</span>
                   </div>
-                  <div className="h-2 bg-[--color-bg-secondary] rounded-full">
+                  <div className="h-2 bg-bg-secondary rounded-full">
                     <div
-                      className="h-2 bg-[--color-primary] rounded-full transition-all duration-500"
+                      className="h-2 bg-primary rounded-full transition-all duration-500"
                       style={{ width: `${width}%` }}
                     />
                   </div>

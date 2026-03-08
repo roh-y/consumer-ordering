@@ -17,25 +17,25 @@ export default function Layout() {
   const initial = userEmail?.charAt(0).toUpperCase() || '?'
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `relative px-3 py-2 text-sm font-medium min-h-[44px] flex items-center transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg ${
+    `relative px-3 py-2 text-sm font-medium min-h-[44px] flex items-center transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg ${
       isActive
-        ? 'text-[--color-primary] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[--color-primary]'
-        : 'text-[--color-text-primary] hover:text-[--color-primary]'
+        ? 'text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary'
+        : 'text-text-primary hover:text-primary'
     }`
 
   const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block px-4 py-3 text-base font-medium min-h-[48px] flex items-center transition-colors rounded-xl ${
       isActive
-        ? 'text-[--color-primary] bg-red-50'
-        : 'text-[--color-text-primary] hover:bg-[--color-bg-secondary]'
+        ? 'text-primary bg-red-50'
+        : 'text-text-primary hover:bg-bg-secondary'
     }`
 
   return (
-    <div className="min-h-screen bg-[--color-bg-secondary]">
+    <div className="min-h-screen bg-bg-secondary">
       {/* Navigation bar */}
-      <nav className="bg-white border-b border-[--color-border-subtle] sticky top-0 z-40">
+      <nav className="bg-white border-b border-border-subtle sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-          <NavLink to="/" className="text-xl font-extrabold text-[--color-primary] tracking-tight focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg px-1">
+          <NavLink to="/" className="text-xl font-extrabold text-primary tracking-tight focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg px-1">
             Wireless
           </NavLink>
 
@@ -52,11 +52,11 @@ export default function Layout() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="ml-2 px-3 py-2 text-sm font-medium text-[--color-text-primary] hover:text-[--color-error] min-h-[44px] flex items-center focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
+                  className="ml-2 px-3 py-2 text-sm font-medium text-text-primary hover:text-error min-h-[44px] flex items-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
                 >
                   Logout
                 </button>
-                <div className="ml-2 w-9 h-9 rounded-full bg-[--color-primary] text-white flex items-center justify-center text-sm font-semibold shrink-0">
+                <div className="ml-2 w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold shrink-0">
                   {initial}
                 </div>
               </>
@@ -65,7 +65,7 @@ export default function Layout() {
                 <NavLink to="/login" className={navLinkClass}>Login</NavLink>
                 <NavLink
                   to="/register"
-                  className="ml-2 bg-[--color-primary] hover:bg-[--color-primary-hover] text-white text-sm font-semibold px-5 min-h-[40px] flex items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+                  className="ml-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 min-h-[40px] flex items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   Register
                 </NavLink>
@@ -76,7 +76,7 @@ export default function Layout() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-[--color-text-primary] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
+            className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center text-text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
             aria-label="Toggle menu"
           >
             {menuOpen ? (
@@ -93,7 +93,7 @@ export default function Layout() {
 
         {/* Mobile menu dropdown */}
         {menuOpen && (
-          <div className="md:hidden border-t border-[--color-border-subtle] bg-white px-4 py-3 space-y-1">
+          <div className="md:hidden border-t border-border-subtle bg-white px-4 py-3 space-y-1">
             {isAuthenticated ? (
               <>
                 <NavLink to="/plans" className={mobileNavLinkClass} onClick={() => setMenuOpen(false)}>Plans</NavLink>
@@ -103,10 +103,10 @@ export default function Layout() {
                 {isAdmin && (
                   <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setMenuOpen(false)}>Admin</NavLink>
                 )}
-                <div className="border-t border-[--color-border-subtle] mt-2 pt-2">
+                <div className="border-t border-border-subtle mt-2 pt-2">
                   <button
                     onClick={handleLogout}
-                    className="w-full px-4 py-3 text-base font-medium text-[--color-error] min-h-[48px] flex items-center rounded-xl hover:bg-red-50 transition-colors"
+                    className="w-full px-4 py-3 text-base font-medium text-error min-h-[48px] flex items-center rounded-xl hover:bg-red-50 transition-colors"
                   >
                     Logout
                   </button>
