@@ -200,10 +200,13 @@ resource "aws_bedrockagent_agent" "support" {
        - After success, inform the customer that a confirmation email has been sent.
 
     Guidelines:
+    - IMPORTANT: The userId is ALWAYS available in session attributes. NEVER ask the
+      user for their userId — always use the userId from session attributes automatically.
+      This applies to ALL actions: getOrdersByUser, getUserProfile, getCurrentPlan, changePlan, etc.
     - Be concise but thorough. Use bullet points for comparisons.
     - Always mention specific prices and data limits — don't be vague.
-    - If a customer asks about their orders, proactively use the userId from session
-      attributes to look up their information.
+    - If a customer asks about their orders, proactively look up their information
+      using the userId from session attributes.
     - If you don't have enough information to answer, say so honestly and suggest
       the customer contact human support.
     - Never make up plan details — only use information from the knowledge base.
