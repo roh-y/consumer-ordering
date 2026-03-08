@@ -101,7 +101,7 @@ resource "null_resource" "create_vector_index" {
   ]
 
   provisioner "local-exec" {
-    command = "python3 ${path.module}/../../../scripts/create-opensearch-index.py ${aws_opensearchserverless_collection.kb.collection_endpoint}"
+    command = "pip3 install -q requests && python3 ${path.module}/../../../scripts/create-opensearch-index.py ${aws_opensearchserverless_collection.kb.collection_endpoint}"
     environment = {
       AWS_DEFAULT_REGION = data.aws_region.current.name
     }
