@@ -6,10 +6,6 @@ locals {
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-# Get the full ARN of whoever is running Terraform (IAM user or role)
-data "aws_iam_session_context" "current" {
-  arn = data.aws_caller_identity.current.arn
-}
 
 # --- OpenSearch Serverless Collection (VECTORSEARCH) ---
 
@@ -89,7 +85,7 @@ resource "aws_opensearchserverless_access_policy" "kb" {
       ]
       Principal = [
         var.bedrock_kb_role_arn,
-        data.aws_iam_session_context.current.issuer_arn,
+        data.aws_caller_identity.current.arn,
       ]
     }
   ])

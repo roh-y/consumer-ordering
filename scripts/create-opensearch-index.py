@@ -6,10 +6,12 @@ Usage: python3 create-opensearch-index.py <collection_endpoint>
 
 The index name and field mappings match what Bedrock KB expects by default.
 Uses SigV4 signing via boto3 — no extra packages needed.
+Retries on 403 to handle data access policy propagation delay.
 """
 
 import json
 import sys
+import time
 import boto3
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
@@ -20,6 +22,21 @@ INDEX_NAME = "bedrock-knowledge-base-default-index"
 VECTOR_FIELD = "bedrock-knowledge-base-default-vector"
 TEXT_FIELD = "AMAZON_BEDROCK_TEXT_CHUNK"
 METADATA_FIELD = "AMAZON_BEDROCK_METADATA"
+
+MAX_RETRIES = 10
+RETRY_DELAY = 15  # seconds
+
+
+def make_signed_request(method, url, credentials, region, body=None):
+    """Make a SigV4-signed request to OpenSearch Serverless."""
+    headers = {"Content-Type": "application/json"} if body else {}
+    aws_request = AWSRequest(method=method, url=url, data=body, headers=headers)
+    SigV4Auth(credentials, "aoss", region).add_auth(aws_request)
+
+    req = Request(url, data=body.encode() if body else None, method=method)
+    for key, val in dict(aws_request.headers).items():
+        req.add_header(key, val)
+    return urlopen(req)
 
 
 def main():
@@ -33,25 +50,33 @@ def main():
 
     url = f"{endpoint}/{INDEX_NAME}"
 
-    # Check if index already exists
     session = boto3.Session()
     credentials = session.get_credentials().get_frozen_credentials()
     region = session.region_name or "us-east-1"
 
-    try:
-        head_request = AWSRequest(method="HEAD", url=url)
-        SigV4Auth(credentials, "aoss", region).add_auth(head_request)
-        req = Request(url, method="HEAD")
-        for key, val in dict(head_request.headers).items():
-            req.add_header(key, val)
-        urlopen(req)
-        print(f"Index '{INDEX_NAME}' already exists — skipping creation.")
-        return
-    except HTTPError as e:
-        if e.code != 404:
-            print(f"Unexpected error checking index: {e.code} {e.read().decode()}")
-            sys.exit(1)
-        print(f"Index '{INDEX_NAME}' not found — creating...")
+    # Check if index already exists (with retries for 403)
+    for attempt in range(MAX_RETRIES):
+        try:
+            make_signed_request("HEAD", url, credentials, region)
+            print(f"Index '{INDEX_NAME}' already exists — skipping creation.")
+            return
+        except HTTPError as e:
+            if e.code == 404:
+                print(f"Index '{INDEX_NAME}' not found — will create.")
+                break
+            elif e.code == 403:
+                if attempt < MAX_RETRIES - 1:
+                    print(f"Got 403 (attempt {attempt + 1}/{MAX_RETRIES}) — data access policy may still be propagating. Retrying in {RETRY_DELAY}s...")
+                    time.sleep(RETRY_DELAY)
+                    # Refresh credentials for new SigV4 signature
+                    credentials = session.get_credentials().get_frozen_credentials()
+                    continue
+                else:
+                    print(f"Still 403 after {MAX_RETRIES} attempts. Check data access policy.")
+                    sys.exit(1)
+            else:
+                print(f"Unexpected error checking index: {e.code} {e.read().decode()}")
+                sys.exit(1)
 
     # Create the index with vector search mappings
     body = json.dumps({
@@ -88,28 +113,24 @@ def main():
         },
     })
 
-    aws_request = AWSRequest(
-        method="PUT",
-        url=url,
-        data=body,
-        headers={"Content-Type": "application/json"},
-    )
-    SigV4Auth(credentials, "aoss", region).add_auth(aws_request)
-
-    req = Request(url, data=body.encode(), method="PUT")
-    for key, val in dict(aws_request.headers).items():
-        req.add_header(key, val)
-
-    try:
-        response = urlopen(req)
-        print(f"Index '{INDEX_NAME}' created successfully: {response.read().decode()}")
-    except HTTPError as e:
-        error_body = e.read().decode()
-        if "resource_already_exists_exception" in error_body:
-            print(f"Index '{INDEX_NAME}' already exists (race condition) — OK.")
-        else:
-            print(f"Error creating index: {e.code} {error_body}")
-            sys.exit(1)
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = make_signed_request("PUT", url, credentials, region, body)
+            print(f"Index '{INDEX_NAME}' created successfully: {response.read().decode()}")
+            return
+        except HTTPError as e:
+            error_body = e.read().decode()
+            if "resource_already_exists_exception" in error_body:
+                print(f"Index '{INDEX_NAME}' already exists (race condition) — OK.")
+                return
+            elif e.code == 403 and attempt < MAX_RETRIES - 1:
+                print(f"Got 403 creating index (attempt {attempt + 1}/{MAX_RETRIES}). Retrying in {RETRY_DELAY}s...")
+                time.sleep(RETRY_DELAY)
+                credentials = session.get_credentials().get_frozen_credentials()
+                continue
+            else:
+                print(f"Error creating index: {e.code} {error_body}")
+                sys.exit(1)
 
 
 if __name__ == "__main__":
