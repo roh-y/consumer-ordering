@@ -199,6 +199,7 @@ resource "aws_bedrockagent_agent" "support" {
 
 resource "aws_bedrockagent_agent_knowledge_base_association" "plans" {
   agent_id             = aws_bedrockagent_agent.support.agent_id
+  agent_version        = "DRAFT"
   knowledge_base_id    = aws_bedrockagent_knowledge_base.plans.id
   description          = "Knowledge base containing wireless plan details, FAQs, comparisons, and policies"
   knowledge_base_state = "ENABLED"
@@ -208,6 +209,7 @@ resource "aws_bedrockagent_agent_knowledge_base_association" "plans" {
 
 resource "aws_bedrockagent_agent_action_group" "customer_actions" {
   agent_id          = aws_bedrockagent_agent.support.agent_id
+  agent_version     = "DRAFT"
   action_group_name = "CustomerActions"
   description       = "Actions to look up customer orders, profile, and available plans"
 
