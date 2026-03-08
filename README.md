@@ -1,6 +1,6 @@
 # Consumer Ordering — Wireless Plan Purchasing Demo
 
-A demo mobile web application that simulates purchasing wireless service plans (like Verizon). Built to learn AWS services, CI/CD pipelines, and RAG-based recommendations. No real fulfillment or payments — purely educational.
+A demo mobile web application that simulates purchasing wireless service plans. Built to learn AWS services, CI/CD pipelines, and RAG-based recommendations. No real fulfillment or payments — purely educational.
 
 ## What Does This App Do?
 
