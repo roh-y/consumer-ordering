@@ -389,6 +389,9 @@ resource "aws_bedrockagent_agent_alias" "live" {
   agent_id         = aws_bedrockagent_agent.support.agent_id
   agent_alias_name = "live"
 
+  # Force alias update when agent config changes (publishes new version)
+  description = "Model: ${aws_bedrockagent_agent.support.foundation_model}"
+
   depends_on = [
     aws_bedrockagent_agent_knowledge_base_association.plans,
     aws_bedrockagent_agent_action_group.customer_actions,
