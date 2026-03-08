@@ -23,9 +23,9 @@
   --radius-full: 9999px;
 
   /* ── Tier 2: Semantic tokens ── */
-  --color-primary: var(--color-coral-500);
-  --color-primary-hover: var(--color-coral-600);
-  --color-primary-pressed: var(--color-coral-700);
+  --color-primary: var(--color-gray-900);
+  --color-primary-hover: #000000;
+  --color-primary-pressed: #000000;
 
   --color-text-primary: var(--color-gray-900);
   --color-text-secondary: var(--color-gray-600);
