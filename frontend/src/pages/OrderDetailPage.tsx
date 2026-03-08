@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { orderService } from '../services/orderService'
-import type { OrderResponse } from '../types'
+import { planService } from '../services/planService'
+import type { OrderResponse, Plan } from '../types'
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -22,6 +23,12 @@ export default function OrderDetailPage() {
     queryKey: ['order', orderId],
     queryFn: () => orderService.getOrder(orderId!),
     enabled: !!orderId,
+  })
+
+  const { data: plan } = useQuery<Plan>({
+    queryKey: ['plan', order?.planId],
+    queryFn: () => planService.getPlan(order!.planId),
+    enabled: !!order?.planId,
   })
 
   const cancelMutation = useMutation({
@@ -95,15 +102,51 @@ export default function OrderDetailPage() {
         </div>
 
         {(order.status === 'PENDING' || order.status === 'ACTIVE') && (
-          <button
-            onClick={() => cancelMutation.mutate()}
-            disabled={cancelMutation.isPending}
-            className="w-full mt-6 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
-          >
-            {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
-          </button>
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => navigate('/plans')}
+              className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+            >
+              Change Plan
+            </button>
+            <button
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
+            </button>
+          </div>
         )}
       </div>
+
+      {plan && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Plan Details</h2>
+          <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <div className="text-sm font-medium text-gray-700 mb-1">Data</div>
+            <div className="text-lg font-semibold text-gray-900">
+              {plan.dataGB === -1 ? 'Unlimited' : `${plan.dataGB} GB`}
+            </div>
+          </div>
+
+          {plan.features.length > 0 && (
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-2">Features</div>
+              <ul className="space-y-1.5">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="text-green-500">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

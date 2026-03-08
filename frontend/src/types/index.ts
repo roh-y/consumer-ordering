@@ -88,6 +88,10 @@ export interface OrderResponse {
   updatedAt: string
 }
 
+export interface EnrichedOrder extends OrderResponse {
+  plan?: Plan
+}
+
 export interface UserStatsResponse {
   totalUsers: number
   usersWithPlan: number

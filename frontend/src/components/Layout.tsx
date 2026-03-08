@@ -21,6 +21,9 @@ export default function Layout() {
           <div className="flex gap-3 text-sm">
             {isAuthenticated ? (
               <>
+                <Link to="/my-plan" className="text-gray-600 hover:text-indigo-600">
+                  My Plan
+                </Link>
                 <Link to="/plans" className="text-gray-600 hover:text-indigo-600">
                   Plans
                 </Link>

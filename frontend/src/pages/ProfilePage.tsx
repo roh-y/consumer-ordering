@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { userService } from '../services/userService'
-import { planService } from '../services/planService'
+import { useCurrentPlan } from '../hooks/useCurrentPlan'
 import type { UpdateProfileRequest } from '../types'
 
 export default function ProfilePage() {
@@ -12,16 +12,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState<UpdateProfileRequest>({})
   const [message, setMessage] = useState('')
 
-  const { data: profile, isLoading } = useQuery({
-    queryKey: ['profile'],
-    queryFn: userService.getProfile,
-  })
-
-  const { data: currentPlan } = useQuery({
-    queryKey: ['plan', profile?.planId],
-    queryFn: () => planService.getPlan(profile!.planId!),
-    enabled: !!profile?.planId,
-  })
+  const { profile, currentPlan, isLoading } = useCurrentPlan()
 
   const mutation = useMutation({
     mutationFn: userService.updateProfile,
@@ -67,28 +58,23 @@ export default function ProfilePage() {
       )}
 
       {currentPlan && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6">
-          <div className="text-sm text-indigo-600 font-medium mb-1">Current Plan</div>
+        <button
+          onClick={() => navigate('/my-plan')}
+          className="w-full bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6 hover:bg-indigo-100 transition-colors text-left"
+        >
           <div className="flex items-center justify-between">
             <div>
+              <div className="text-sm text-indigo-600 font-medium">Current Plan</div>
               <div className="text-lg font-bold text-gray-900">{currentPlan.name}</div>
-              <div className="text-sm text-gray-600">
-                {currentPlan.dataGB === -1 ? 'Unlimited data' : `${currentPlan.dataGB} GB`}
-              </div>
             </div>
             <div className="text-right">
               <div className="text-xl font-bold text-indigo-600">
                 ${currentPlan.pricePerMonth}/mo
               </div>
-              <button
-                onClick={() => navigate('/plans')}
-                className="text-xs text-indigo-600 hover:underline mt-1"
-              >
-                Change Plan
-              </button>
+              <span className="text-xs text-indigo-600">View details →</span>
             </div>
           </div>
-        </div>
+        </button>
       )}
 
       {editing ? (

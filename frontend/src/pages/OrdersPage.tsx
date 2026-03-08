@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { orderService } from '../services/orderService'
-import type { OrderResponse } from '../types'
+import { useOrdersWithPlans } from '../hooks/useOrdersWithPlans'
+import type { EnrichedOrder } from '../types'
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -9,12 +8,50 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-800',
 }
 
+function OrderCard({ order, muted }: { order: EnrichedOrder; muted?: boolean }) {
+  const navigate = useNavigate()
+
+  return (
+    <button
+      onClick={() => navigate(`/orders/${order.orderId}`)}
+      className={`w-full rounded-xl shadow-sm border p-4 hover:shadow-md transition-shadow text-left ${
+        muted ? 'bg-gray-50 border-gray-200 opacity-75' : 'bg-white border-gray-200'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-semibold text-gray-900">{order.planName}</h3>
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}
+        >
+          {order.status}
+        </span>
+      </div>
+      <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex gap-3">
+          <span>${order.pricePerMonth}/mo</span>
+          {order.plan && (
+            <>
+              <span>·</span>
+              <span>{order.plan.dataGB === -1 ? 'Unlimited data' : `${order.plan.dataGB} GB`}</span>
+              <span>·</span>
+              <span>{order.plan.features.length} features</span>
+            </>
+          )}
+        </div>
+        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+      </div>
+      {order.status === 'CANCELLED' && (
+        <div className="text-xs text-gray-400 mt-1">
+          Cancelled {new Date(order.updatedAt).toLocaleDateString()}
+        </div>
+      )}
+    </button>
+  )
+}
+
 export default function OrdersPage() {
   const navigate = useNavigate()
-  const { data: orders, isLoading, error } = useQuery<OrderResponse[]>({
-    queryKey: ['orders'],
-    queryFn: orderService.getOrders,
-  })
+  const { activeOrders, pendingOrders, cancelledOrders, isLoading, error } = useOrdersWithPlans()
 
   if (isLoading) {
     return (
@@ -32,12 +69,15 @@ export default function OrdersPage() {
     )
   }
 
+  const hasActiveOrPending = activeOrders.length > 0 || pendingOrders.length > 0
+  const hasAny = hasActiveOrPending || cancelledOrders.length > 0
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-2">My Orders</h1>
       <p className="text-gray-500 text-sm mb-6">View your plan subscriptions</p>
 
-      {orders?.length === 0 ? (
+      {!hasAny ? (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">No orders yet</p>
           <button
@@ -48,25 +88,28 @@ export default function OrdersPage() {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {orders?.map((order) => (
-            <button
-              key={order.orderId}
-              onClick={() => navigate(`/orders/${order.orderId}`)}
-              className="w-full bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow text-left"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-900">{order.planName}</h3>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
-                  {order.status}
-                </span>
+        <div className="space-y-8">
+          {hasActiveOrPending && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Active & Pending</h2>
+              <div className="space-y-3">
+                {[...activeOrders, ...pendingOrders].map((order) => (
+                  <OrderCard key={order.orderId} order={order} />
+                ))}
               </div>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>${order.pricePerMonth}/mo</span>
-                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+            </section>
+          )}
+
+          {cancelledOrders.length > 0 && (
+            <section>
+              <h2 className="text-lg font-semibold text-gray-500 mb-3">Past Plans</h2>
+              <div className="space-y-3">
+                {cancelledOrders.map((order) => (
+                  <OrderCard key={order.orderId} order={order} muted />
+                ))}
               </div>
-            </button>
-          ))}
+            </section>
+          )}
         </div>
       )}
     </div>

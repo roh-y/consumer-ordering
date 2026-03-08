@@ -12,6 +12,7 @@ import PlanDetailPage from './pages/PlanDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrdersPage from './pages/OrdersPage'
 import OrderDetailPage from './pages/OrderDetailPage'
+import MyPlanPage from './pages/MyPlanPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminPlansPage from './pages/admin/AdminPlansPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -36,6 +37,14 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/plans" element={<PlansPage />} />
             <Route path="/plans/:planId" element={<PlanDetailPage />} />
+            <Route
+              path="/my-plan"
+              element={
+                <ProtectedRoute>
+                  <MyPlanPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/checkout"
               element={
