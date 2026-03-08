@@ -35,13 +35,13 @@ describe('App', () => {
 
   it('renders the navigation', () => {
     render(<App />)
-    expect(screen.getByText('Wireless Plans')).toBeInTheDocument()
+    expect(screen.getByText('Wireless')).toBeInTheDocument()
   })
 
   it('shows the plans page by default', async () => {
     render(<App />)
     await waitFor(() => {
-      expect(screen.getByText('Choose Your Plan')).toBeInTheDocument()
+      expect(screen.getByText('Find the perfect plan')).toBeInTheDocument()
     })
   })
 
