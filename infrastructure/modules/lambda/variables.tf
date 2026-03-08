@@ -40,6 +40,17 @@ variable "plans_table_arn" {
   type        = string
 }
 
+# SQS (for action group Lambda to publish plan change events)
+variable "sqs_order_events_queue_arn" {
+  description = "ARN of the SQS order events queue"
+  type        = string
+}
+
+variable "sqs_order_events_queue_url" {
+  description = "URL of the SQS order events queue"
+  type        = string
+}
+
 # Bedrock Agent (for chat API Lambda)
 variable "bedrock_agent_id" {
   description = "Bedrock Agent ID"

@@ -213,6 +213,9 @@ module "lambda_functions" {
   users_table_arn   = module.dynamodb.users_table_arn
   plans_table_arn   = module.dynamodb.plans_table_arn
 
+  sqs_order_events_queue_arn = module.sqs.order_events_queue_arn
+  sqs_order_events_queue_url = module.sqs.order_events_queue_url
+
   bedrock_agent_id       = module.bedrock.agent_id
   bedrock_agent_alias_id = module.bedrock.agent_alias_id
 }

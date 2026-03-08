@@ -188,6 +188,17 @@ resource "aws_bedrockagent_agent" "support" {
     4. **Handle general support**: Answer billing questions, cancellation policies,
        and account-related queries using the knowledge base.
 
+    5. **Check current plan**: When a customer asks about their current plan, use the
+       getCurrentPlan action with their userId from session attributes to retrieve their
+       active plan details including name, price, data allowance, and features.
+
+    6. **Change plan**: When a customer wants to change their plan:
+       - First, show their current plan using getCurrentPlan.
+       - Then list available alternatives using listPlans.
+       - ALWAYS confirm with the customer before executing the change.
+       - Once confirmed, use changePlan with the userId and newPlanId.
+       - After success, inform the customer that a confirmation email has been sent.
+
     Guidelines:
     - Be concise but thorough. Use bullet points for comparisons.
     - Always mention specific prices and data limits — don't be vague.
@@ -218,7 +229,7 @@ resource "aws_bedrockagent_agent_action_group" "customer_actions" {
   agent_id          = aws_bedrockagent_agent.support.agent_id
   agent_version     = "DRAFT"
   action_group_name = "CustomerActions"
-  description       = "Actions to look up customer orders, profile, and available plans"
+  description       = "Actions to look up customer orders, profile, available plans, and manage plan changes"
 
   action_group_executor {
     lambda = var.action_group_lambda_arn
@@ -378,6 +389,93 @@ resource "aws_bedrockagent_agent_action_group" "customer_actions" {
             }
           }
         }
+        "/getCurrentPlan" = {
+          get = {
+            summary     = "Get the current plan for a user"
+            description = "Retrieves the user's active plan details including name, price, data allowance, and features"
+            operationId = "getCurrentPlan"
+            parameters = [
+              {
+                name        = "userId"
+                in          = "query"
+                required    = true
+                description = "The user ID (Cognito sub) of the customer"
+                schema      = { type = "string" }
+              }
+            ]
+            responses = {
+              "200" = {
+                description = "Current plan details"
+                content = {
+                  "application/json" = {
+                    schema = {
+                      type = "object"
+                      properties = {
+                        userId        = { type = "string" }
+                        planId        = { type = "string" }
+                        planName      = { type = "string" }
+                        pricePerMonth = { type = "string" }
+                        dataGB        = { type = "string" }
+                        features = {
+                          type  = "array"
+                          items = { type = "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "/changePlan" = {
+          post = {
+            summary     = "Change a user's wireless plan"
+            description = "Changes the user's plan by cancelling active orders, creating a new order, and sending a confirmation email. Always confirm with the user before calling this action."
+            operationId = "changePlan"
+            requestBody = {
+              required = true
+              content = {
+                "application/json" = {
+                  schema = {
+                    type     = "object"
+                    required = ["userId", "newPlanId"]
+                    properties = {
+                      userId = {
+                        type        = "string"
+                        description = "The user ID (Cognito sub) of the customer"
+                      }
+                      newPlanId = {
+                        type        = "string"
+                        description = "The plan ID of the new plan to switch to"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            responses = {
+              "200" = {
+                description = "Plan change result"
+                content = {
+                  "application/json" = {
+                    schema = {
+                      type = "object"
+                      properties = {
+                        message       = { type = "string" }
+                        orderId       = { type = "string" }
+                        planId        = { type = "string" }
+                        planName      = { type = "string" }
+                        pricePerMonth = { type = "string" }
+                        emailSent     = { type = "boolean" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     })
   }
@@ -390,7 +488,7 @@ resource "aws_bedrockagent_agent_alias" "live" {
   agent_alias_name = "live"
 
   # Force alias update when agent config changes (publishes new version)
-  description = "Model: ${aws_bedrockagent_agent.support.foundation_model}"
+  description = "Model: ${aws_bedrockagent_agent.support.foundation_model} | Actions: ${aws_bedrockagent_agent_action_group.customer_actions.action_group_name}"
 
   depends_on = [
     aws_bedrockagent_agent_knowledge_base_association.plans,

@@ -7,14 +7,19 @@ Returns responses in the Bedrock Agent action group response format.
 
 import json
 import os
+import uuid
+from datetime import datetime, timezone
+
 import boto3
 from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
+sqs = boto3.client("sqs")
 
 ORDERS_TABLE = os.environ["ORDERS_TABLE_NAME"]
 USERS_TABLE = os.environ["USERS_TABLE_NAME"]
 PLANS_TABLE = os.environ["PLANS_TABLE_NAME"]
+SQS_ORDER_EVENTS_QUEUE_URL = os.environ.get("SQS_ORDER_EVENTS_QUEUE_URL", "")
 
 
 def handler(event, context):
@@ -37,6 +42,11 @@ def handler(event, context):
             result = get_user_profile(params)
         elif api_path == "/listPlans" and http_method == "GET":
             result = list_plans()
+        elif api_path == "/getCurrentPlan" and http_method == "GET":
+            result = get_current_plan(params)
+        elif api_path == "/changePlan" and http_method == "POST":
+            body_params = _extract_body_params(request_body)
+            result = change_plan(body_params)
         else:
             result = {"error": f"Unknown action: {http_method} {api_path}"}
 
@@ -163,3 +173,138 @@ def list_plans():
         )
 
     return {"planCount": len(plans), "plans": plans}
+
+
+def get_current_plan(params):
+    """Get the current plan for a user."""
+    user_id = params.get("userId")
+    if not user_id:
+        return {"error": "userId is required"}
+
+    users_table = dynamodb.Table(USERS_TABLE)
+    user_resp = users_table.get_item(Key={"userId": user_id})
+    user = user_resp.get("Item")
+    if not user:
+        return {"message": f"No user found with ID {user_id}"}
+
+    plan_id = user.get("planId")
+    if not plan_id:
+        return {"message": "You do not have an active plan.", "userId": user_id}
+
+    plans_table = dynamodb.Table(PLANS_TABLE)
+    plan_resp = plans_table.get_item(Key={"planId": plan_id})
+    plan = plan_resp.get("Item")
+    if not plan:
+        return {"message": f"Plan {plan_id} not found in catalog.", "userId": user_id, "planId": plan_id}
+
+    return {
+        "userId": user_id,
+        "planId": plan_id,
+        "planName": plan.get("name"),
+        "pricePerMonth": str(plan.get("pricePerMonth", "N/A")),
+        "dataGB": str(plan.get("dataGB", "N/A")),
+        "features": plan.get("features", []),
+    }
+
+
+def change_plan(params):
+    """Change a user's plan: cancel active orders, create new order, update user, send SQS event."""
+    user_id = params.get("userId")
+    new_plan_id = params.get("newPlanId")
+    if not user_id or not new_plan_id:
+        return {"error": "userId and newPlanId are required"}
+
+    # Validate the new plan exists
+    plans_table = dynamodb.Table(PLANS_TABLE)
+    plan_resp = plans_table.get_item(Key={"planId": new_plan_id})
+    new_plan = plan_resp.get("Item")
+    if not new_plan:
+        return {"error": f"Plan {new_plan_id} does not exist"}
+
+    # Check user exists and isn't already on this plan
+    users_table = dynamodb.Table(USERS_TABLE)
+    user_resp = users_table.get_item(Key={"userId": user_id})
+    user = user_resp.get("Item")
+    if not user:
+        return {"error": f"User {user_id} not found"}
+
+    if user.get("planId") == new_plan_id:
+        return {"message": f"You are already on the {new_plan.get('name')} plan."}
+
+    now = datetime.now(timezone.utc).isoformat()
+    orders_table = dynamodb.Table(ORDERS_TABLE)
+
+    # Cancel active orders for this user
+    active_orders = orders_table.query(
+        IndexName="userId-index",
+        KeyConditionExpression=Key("userId").eq(user_id),
+    )
+    for order in active_orders.get("Items", []):
+        if order.get("status") == "ACTIVE":
+            orders_table.update_item(
+                Key={"orderId": order["orderId"], "userId": user_id},
+                UpdateExpression="SET #s = :s, updatedAt = :u",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={":s": "CANCELLED", ":u": now},
+            )
+
+    # Create new order
+    new_order_id = str(uuid.uuid4())
+    plan_name = new_plan.get("name", "")
+    price_per_month = float(new_plan.get("pricePerMonth", 0))
+
+    orders_table.put_item(
+        Item={
+            "orderId": new_order_id,
+            "userId": user_id,
+            "planId": new_plan_id,
+            "planName": plan_name,
+            "pricePerMonth": new_plan.get("pricePerMonth", 0),
+            "status": "ACTIVE",
+            "createdAt": now,
+            "updatedAt": now,
+        }
+    )
+
+    # Update user's planId
+    users_table.update_item(
+        Key={"userId": user_id},
+        UpdateExpression="SET planId = :p, updatedAt = :u",
+        ExpressionAttributeValues={":p": new_plan_id, ":u": now},
+    )
+
+    # Publish PLAN_CHANGED event to SQS
+    user_email = user.get("email", "")
+    if SQS_ORDER_EVENTS_QUEUE_URL:
+        sqs.send_message(
+            QueueUrl=SQS_ORDER_EVENTS_QUEUE_URL,
+            MessageBody=json.dumps({
+                "eventType": "PLAN_CHANGED",
+                "orderId": new_order_id,
+                "userId": user_id,
+                "planId": new_plan_id,
+                "planName": plan_name,
+                "pricePerMonth": price_per_month,
+                "userEmail": user_email,
+            }),
+        )
+
+    return {
+        "message": f"Successfully changed to the {plan_name} plan.",
+        "orderId": new_order_id,
+        "planId": new_plan_id,
+        "planName": plan_name,
+        "pricePerMonth": str(price_per_month),
+        "emailSent": bool(SQS_ORDER_EVENTS_QUEUE_URL and user_email),
+    }
+
+
+def _extract_body_params(request_body):
+    """Extract parameters from POST request body."""
+    try:
+        content = request_body.get("content", {})
+        json_content = content.get("application/json", {})
+        properties = json_content.get("properties", [])
+        return {p["name"]: p["value"] for p in properties} if properties else {}
+    except (KeyError, TypeError):
+        return {}

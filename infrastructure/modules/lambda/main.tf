@@ -56,6 +56,24 @@ resource "aws_iam_role_policy" "action_group" {
         ]
       },
       {
+        Sid    = "DynamoDBWrite"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+        ]
+        Resource = [
+          var.orders_table_arn,
+          var.users_table_arn,
+        ]
+      },
+      {
+        Sid      = "SQSSendMessage"
+        Effect   = "Allow"
+        Action   = "sqs:SendMessage"
+        Resource = var.sqs_order_events_queue_arn
+      },
+      {
         Sid    = "CloudWatchLogs"
         Effect = "Allow"
         Action = [
@@ -81,9 +99,10 @@ resource "aws_lambda_function" "action_group" {
 
   environment {
     variables = {
-      ORDERS_TABLE_NAME = var.orders_table_name
-      USERS_TABLE_NAME  = var.users_table_name
-      PLANS_TABLE_NAME  = var.plans_table_name
+      ORDERS_TABLE_NAME          = var.orders_table_name
+      USERS_TABLE_NAME           = var.users_table_name
+      PLANS_TABLE_NAME           = var.plans_table_name
+      SQS_ORDER_EVENTS_QUEUE_URL = var.sqs_order_events_queue_url
     }
   }
 
