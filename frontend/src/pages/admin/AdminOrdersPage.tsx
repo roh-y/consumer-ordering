@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { adminService } from '../../services/adminService'
 
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  ACTIVE: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+const statusStyles: Record<string, string> = {
+  PENDING: 'bg-amber-50 text-[--color-warning]',
+  ACTIVE: 'bg-green-50 text-[--color-success]',
+  CANCELLED: 'bg-red-50 text-[--color-error]',
 }
 
 export default function AdminOrdersPage() {
@@ -14,38 +14,42 @@ export default function AdminOrdersPage() {
   })
 
   if (isLoading) {
-    return <div className="text-center text-gray-500 py-8">Loading orders...</div>
+    return (
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">Orders ({orders?.length ?? 0})</h2>
+      <h2 className="text-lg font-semibold text-[--color-text-primary] mb-4">Orders ({orders?.length ?? 0})</h2>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-[--color-bg-secondary] border-b border-[--color-border-default]">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Order ID</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Plan</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Price</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Status</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Created</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Order ID</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Plan</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Price</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Created</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[--color-border-subtle]">
             {orders?.map((order) => (
-              <tr key={order.orderId}>
-                <td className="px-4 py-3 font-mono text-xs">{order.orderId.slice(0, 8)}...</td>
-                <td className="px-4 py-3 font-medium">{order.planName}</td>
-                <td className="px-4 py-3">${order.pricePerMonth}/mo</td>
+              <tr key={order.orderId} className="min-h-[44px]">
+                <td className="px-4 py-3 font-mono text-xs text-[--color-text-secondary]">{order.orderId.slice(0, 8)}...</td>
+                <td className="px-4 py-3 font-medium text-[--color-text-primary]">{order.planName}</td>
+                <td className="px-4 py-3 text-[--color-text-secondary]">${order.pricePerMonth}/mo</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}
+                    className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${statusStyles[order.status] || 'bg-gray-100 text-[--color-text-secondary]'}`}
                   >
                     {order.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-[--color-text-secondary]">
                   {new Date(order.createdAt).toLocaleDateString()}
                 </td>
               </tr>

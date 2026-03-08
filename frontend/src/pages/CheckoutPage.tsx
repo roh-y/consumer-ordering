@@ -35,11 +35,11 @@ export default function CheckoutPage() {
 
   if (!selectedPlan) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">No plan selected</p>
+      <div className="text-center py-16">
+        <p className="text-[--color-text-secondary] mb-4">No plan selected</p>
         <button
           onClick={() => navigate('/plans')}
-          className="text-indigo-600 hover:underline text-sm"
+          className="text-[--color-primary] hover:text-[--color-primary-hover] text-sm font-medium min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
         >
           Browse plans
         </button>
@@ -53,63 +53,81 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Confirm Your Order</h1>
+    <div className="max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold text-[--color-text-primary] mb-6">Confirm Your Order</h1>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
-        <span className="font-medium">UAT Mode</span> — Payment bypassed. Your order will be
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-sm text-amber-800">
+        <span className="font-semibold">UAT Mode</span> — Payment bypassed. Your order will be
         activated immediately.
       </div>
 
       {hasActivePlan && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800">
-          You are changing your plan. Your current plan will be cancelled and replaced with the new
-          one.
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-sm text-blue-800">
+          You are changing your plan. Your current plan will be cancelled and replaced with the new one.
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">Order Summary</h2>
+      {/* Order summary card */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h2 className="text-lg font-semibold text-[--color-text-primary] mb-4">Order Summary</h2>
 
-        <div className="border-t border-gray-100 pt-3 space-y-2">
+        <div className="space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Plan</span>
-            <span className="font-medium">{selectedPlan.name}</span>
+            <span className="text-[--color-text-secondary]">Plan</span>
+            <span className="font-medium text-[--color-text-primary]">{selectedPlan.name}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Data</span>
-            <span className="font-medium">
+            <span className="text-[--color-text-secondary]">Data</span>
+            <span className="font-medium text-[--color-text-primary]">
               {selectedPlan.dataGB === -1 ? 'Unlimited' : `${selectedPlan.dataGB} GB`}
             </span>
           </div>
-          <div className="flex justify-between text-sm border-t border-gray-100 pt-2 mt-2">
-            <span className="text-gray-900 font-medium">Monthly total</span>
-            <span className="text-indigo-600 font-bold text-lg">
-              ${selectedPlan.pricePerMonth}/mo
-            </span>
+          {selectedPlan.features.length > 0 && (
+            <div className="border-t border-[--color-border-subtle] pt-3">
+              <div className="text-xs font-medium text-[--color-text-secondary] mb-2">Includes</div>
+              <ul className="space-y-1">
+                {selectedPlan.features.slice(0, 3).map((f) => (
+                  <li key={f} className="text-xs text-[--color-text-secondary] flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-[--color-success] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <div className="border-t border-[--color-border-default] pt-3">
+            <div className="flex justify-between items-baseline">
+              <span className="text-sm font-medium text-[--color-text-primary]">Monthly total</span>
+              <div>
+                <span className="text-2xl font-bold text-[--color-text-primary]">${selectedPlan.pricePerMonth}</span>
+                <span className="text-sm text-[--color-text-secondary]">/mo</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-4">{error}</div>
+        <div className="bg-red-50 text-[--color-error] p-4 rounded-xl text-sm mb-4">{error}</div>
       )}
 
       <button
         onClick={handleConfirm}
         disabled={createOrderMutation.isPending}
-        className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+        className="w-full bg-[--color-primary] hover:bg-[--color-primary-hover] active:bg-[--color-primary-pressed] active:scale-[0.98] text-white min-h-[48px] rounded-full font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
       >
         {createOrderMutation.isPending
           ? 'Activating...'
           : hasActivePlan
             ? 'Change Plan'
-            : 'Activate Plan'}
+            : 'Confirm Order'}
       </button>
 
       <button
         onClick={() => navigate('/plans')}
-        className="w-full mt-3 text-gray-600 text-sm hover:text-gray-900"
+        className="w-full mt-3 text-[--color-text-secondary] hover:text-[--color-text-primary] text-sm min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
       >
         Cancel
       </button>

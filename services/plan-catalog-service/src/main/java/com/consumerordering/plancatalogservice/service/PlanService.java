@@ -41,6 +41,9 @@ public class PlanService {
                 .pricePerMonth(request.getPricePerMonth())
                 .dataGB(request.getDataGB())
                 .features(request.getFeatures())
+                .badge(request.getBadge())
+                .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
+                .shortTagline(request.getShortTagline())
                 .build();
 
         planRepository.save(plan);
@@ -56,6 +59,9 @@ public class PlanService {
         if (request.getPricePerMonth() != null) plan.setPricePerMonth(request.getPricePerMonth());
         if (request.getDataGB() != null) plan.setDataGB(request.getDataGB());
         if (request.getFeatures() != null) plan.setFeatures(request.getFeatures());
+        if (request.getBadge() != null) plan.setBadge(request.getBadge());
+        if (request.getSortOrder() != null) plan.setSortOrder(request.getSortOrder());
+        if (request.getShortTagline() != null) plan.setShortTagline(request.getShortTagline());
 
         planRepository.update(plan);
         return toPlanResponse(plan);
@@ -75,6 +81,9 @@ public class PlanService {
                 .pricePerMonth(plan.getPricePerMonth())
                 .dataGB(plan.getDataGB())
                 .features(plan.getFeatures())
+                .badge(plan.getBadge())
+                .sortOrder(plan.getSortOrder())
+                .shortTagline(plan.getShortTagline())
                 .build();
     }
 }

@@ -28,4 +28,7 @@ public class CreatePlanRequest {
     private Integer dataGB;
 
     private List<String> features;
+    private String badge;
+    private Integer sortOrder;
+    private String shortTagline;
 }

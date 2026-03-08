@@ -4,10 +4,10 @@ import { orderService } from '../services/orderService'
 import { planService } from '../services/planService'
 import type { OrderResponse, Plan } from '../types'
 
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  ACTIVE: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+const statusStyles: Record<string, string> = {
+  PENDING: 'bg-amber-50 text-[--color-warning]',
+  ACTIVE: 'bg-green-50 text-[--color-success]',
+  CANCELLED: 'bg-red-50 text-[--color-error]',
 }
 
 export default function OrderDetailPage() {
@@ -41,63 +41,67 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
       </div>
     )
   }
 
   if (error || !order) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">Order not found.</div>
+      <div className="bg-red-50 text-[--color-error] p-4 rounded-xl text-sm">Order not found.</div>
     )
   }
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       <button
         onClick={() => navigate('/orders')}
-        className="text-indigo-600 text-sm mb-4 hover:underline"
+        className="text-[--color-text-secondary] hover:text-[--color-text-primary] text-sm mb-6 inline-flex items-center gap-1 min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
       >
-        &larr; Back to Orders
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Orders
       </button>
 
       {order.status === 'ACTIVE' && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 text-sm text-green-800">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4 text-sm text-green-800">
           Your plan is active. A confirmation email has been sent.
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-gray-900">Order Details</h1>
+      {/* Order info card */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-xl font-bold text-[--color-text-primary]">Order Details</h1>
           <span
-            className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}
+            className={`text-xs px-3 py-1 rounded-full font-semibold ${statusStyles[order.status] || 'bg-gray-100 text-[--color-text-secondary]'}`}
           >
             {order.status}
           </span>
         </div>
 
         <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Order ID</span>
-            <span className="font-mono text-xs text-gray-700">{order.orderId.slice(0, 8)}...</span>
+          <div className="flex justify-between py-2 border-b border-[--color-border-subtle]">
+            <span className="text-[--color-text-secondary]">Order ID</span>
+            <span className="font-mono text-xs text-[--color-text-secondary]">{order.orderId.slice(0, 8)}...</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Plan</span>
-            <span className="font-medium">{order.planName}</span>
+          <div className="flex justify-between py-2 border-b border-[--color-border-subtle]">
+            <span className="text-[--color-text-secondary]">Plan</span>
+            <span className="font-medium text-[--color-text-primary]">{order.planName}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Monthly price</span>
-            <span className="font-medium text-indigo-600">${order.pricePerMonth}/mo</span>
+          <div className="flex justify-between py-2 border-b border-[--color-border-subtle]">
+            <span className="text-[--color-text-secondary]">Monthly price</span>
+            <span className="font-semibold text-[--color-text-primary]">${order.pricePerMonth}/mo</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Created</span>
-            <span>{new Date(order.createdAt).toLocaleString()}</span>
+          <div className="flex justify-between py-2 border-b border-[--color-border-subtle]">
+            <span className="text-[--color-text-secondary]">Created</span>
+            <span className="text-[--color-text-secondary]">{new Date(order.createdAt).toLocaleString()}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Last updated</span>
-            <span>{new Date(order.updatedAt).toLocaleString()}</span>
+          <div className="flex justify-between py-2">
+            <span className="text-[--color-text-secondary]">Last updated</span>
+            <span className="text-[--color-text-secondary]">{new Date(order.updatedAt).toLocaleString()}</span>
           </div>
         </div>
 
@@ -105,14 +109,14 @@ export default function OrderDetailPage() {
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => navigate('/plans')}
-              className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+              className="flex-1 border border-[--color-gray-900] text-[--color-gray-900] min-h-[44px] rounded-full font-semibold text-sm hover:bg-[--color-bg-secondary] transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
             >
               Change Plan
             </button>
             <button
               onClick={() => cancelMutation.mutate()}
               disabled={cancelMutation.isPending}
-              className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+              className="flex-1 text-[--color-error] min-h-[44px] rounded-full font-semibold text-sm hover:bg-red-50 disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
             >
               {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
             </button>
@@ -120,25 +124,28 @@ export default function OrderDetailPage() {
         )}
       </div>
 
+      {/* Plan details card */}
       {plan && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-4">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Plan Details</h2>
-          <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+        <div className="bg-white rounded-xl shadow-sm p-6 mt-4">
+          <h2 className="text-lg font-semibold text-[--color-text-primary] mb-3">Plan Details</h2>
+          <p className="text-sm text-[--color-text-secondary] mb-4">{plan.description}</p>
 
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <div className="text-sm font-medium text-gray-700 mb-1">Data</div>
-            <div className="text-lg font-semibold text-gray-900">
+          <div className="bg-[--color-bg-secondary] rounded-xl p-4 mb-4">
+            <div className="text-xs font-medium text-[--color-text-secondary] mb-1">Data</div>
+            <div className="text-xl font-bold text-[--color-text-primary]">
               {plan.dataGB === -1 ? 'Unlimited' : `${plan.dataGB} GB`}
             </div>
           </div>
 
           {plan.features.length > 0 && (
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-2">Features</div>
-              <ul className="space-y-1.5">
+              <div className="text-sm font-medium text-[--color-text-primary] mb-2">Features</div>
+              <ul className="space-y-2">
                 {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                    <span className="text-green-500">✓</span>
+                  <li key={i} className="flex items-center gap-2 text-sm text-[--color-text-secondary]">
+                    <svg className="w-4 h-4 text-[--color-success] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                     {feature}
                   </li>
                 ))}

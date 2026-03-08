@@ -51,6 +51,9 @@ export interface Plan {
   pricePerMonth: number
   dataGB: number
   features: string[]
+  badge?: string
+  sortOrder?: number
+  shortTagline?: string
 }
 
 export interface CreatePlanRequest {
@@ -59,6 +62,9 @@ export interface CreatePlanRequest {
   pricePerMonth: number
   dataGB: number
   features: string[]
+  badge?: string
+  sortOrder?: number
+  shortTagline?: string
 }
 
 export interface UpdatePlanRequest {
@@ -67,6 +73,9 @@ export interface UpdatePlanRequest {
   pricePerMonth?: number
   dataGB?: number
   features?: string[]
+  badge?: string
+  sortOrder?: number
+  shortTagline?: string
 }
 
 export interface CreateOrderRequest {

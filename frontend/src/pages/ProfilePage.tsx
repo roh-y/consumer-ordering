@@ -45,121 +45,137 @@ export default function ProfilePage() {
     mutation.mutate(form)
   }
 
+  const inputClass =
+    'w-full px-4 h-12 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]'
+
   if (isLoading) {
-    return <div className="text-center text-gray-500 py-8">Loading profile...</div>
+    return (
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
+    <div className="max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold text-[--color-text-primary] mb-6">Your Profile</h1>
 
       {message && (
-        <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm">{message}</div>
+        <div className="bg-green-50 text-[--color-success] p-3 rounded-xl mb-4 text-sm">{message}</div>
       )}
 
+      {/* Current plan card */}
       {currentPlan && (
         <button
           onClick={() => navigate('/my-plan')}
-          className="w-full bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6 hover:bg-indigo-100 transition-colors text-left"
+          className="w-full bg-white rounded-xl shadow-sm p-5 mb-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-left focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-indigo-600 font-medium">Current Plan</div>
-              <div className="text-lg font-bold text-gray-900">{currentPlan.name}</div>
+              <div className="text-xs font-medium text-[--color-primary] mb-0.5">Current Plan</div>
+              <div className="text-lg font-bold text-[--color-text-primary]">{currentPlan.name}</div>
             </div>
             <div className="text-right">
-              <div className="text-xl font-bold text-indigo-600">
-                ${currentPlan.pricePerMonth}/mo
+              <div className="text-xl font-bold text-[--color-text-primary]">
+                ${currentPlan.pricePerMonth}<span className="text-sm font-normal text-[--color-text-secondary]">/mo</span>
               </div>
-              <span className="text-xs text-indigo-600">View details →</span>
+              <span className="text-xs text-[--color-primary] font-medium">View details →</span>
             </div>
           </div>
         </button>
       )}
 
       {editing ? (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-[--color-text-primary] mb-4">Edit Profile</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">First Name</label>
+                <input
+                  name="firstName"
+                  value={form.firstName || ''}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">Last Name</label>
+                <input
+                  name="lastName"
+                  value={form.lastName || ''}
+                  onChange={handleChange}
+                  className={inputClass}
+                />
+              </div>
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">Phone</label>
               <input
-                name="firstName"
-                value={form.firstName || ''}
+                name="phoneNumber"
+                value={form.phoneNumber || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">Address</label>
               <input
-                name="lastName"
-                value={form.lastName || ''}
+                name="address"
+                value={form.address || ''}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className={inputClass}
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-            <input
-              name="phoneNumber"
-              value={form.phoneNumber || ''}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <input
-              name="address"
-              value={form.address || ''}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {mutation.isPending ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="flex-1 bg-[--color-primary] hover:bg-[--color-primary-hover] text-white min-h-[44px] rounded-full font-semibold text-sm disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+              >
+                {mutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="flex-1 border border-[--color-border-default] text-[--color-text-primary] min-h-[44px] rounded-full font-semibold text-sm hover:bg-[--color-bg-secondary] transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       ) : (
-        <div className="space-y-3">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-sm text-gray-500">Email</div>
-            <div className="font-medium">{profile?.email}</div>
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[--color-text-primary]">Personal Info</h2>
+            <button
+              onClick={startEditing}
+              className="text-[--color-primary] hover:text-[--color-primary-hover] text-sm font-medium min-h-[44px] px-3 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded-lg"
+            >
+              Edit
+            </button>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-sm text-gray-500">Name</div>
-            <div className="font-medium">
-              {profile?.firstName} {profile?.lastName}
+          <div className="space-y-4">
+            <div className="border-b border-[--color-border-subtle] pb-3">
+              <div className="text-xs text-[--color-text-secondary] mb-0.5">Email</div>
+              <div className="text-sm font-medium text-[--color-text-primary]">{profile?.email}</div>
+            </div>
+            <div className="border-b border-[--color-border-subtle] pb-3">
+              <div className="text-xs text-[--color-text-secondary] mb-0.5">Name</div>
+              <div className="text-sm font-medium text-[--color-text-primary]">
+                {profile?.firstName} {profile?.lastName}
+              </div>
+            </div>
+            <div className="border-b border-[--color-border-subtle] pb-3">
+              <div className="text-xs text-[--color-text-secondary] mb-0.5">Phone</div>
+              <div className="text-sm font-medium text-[--color-text-primary]">{profile?.phoneNumber || 'Not set'}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[--color-text-secondary] mb-0.5">Address</div>
+              <div className="text-sm font-medium text-[--color-text-primary]">{profile?.address || 'Not set'}</div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-sm text-gray-500">Phone</div>
-            <div className="font-medium">{profile?.phoneNumber || 'Not set'}</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <div className="text-sm text-gray-500">Address</div>
-            <div className="font-medium">{profile?.address || 'Not set'}</div>
-          </div>
-          <button
-            onClick={startEditing}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Edit Profile
-          </button>
         </div>
       )}
     </div>

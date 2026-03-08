@@ -8,40 +8,44 @@ export default function AdminUsersPage() {
   })
 
   if (isLoading) {
-    return <div className="text-center text-gray-500 py-8">Loading users...</div>
+    return (
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">Users ({users?.length ?? 0})</h2>
+      <h2 className="text-lg font-semibold text-[--color-text-primary] mb-4">Users ({users?.length ?? 0})</h2>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-[--color-bg-secondary] border-b border-[--color-border-default]">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Name</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Email</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Plan</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Registered</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Name</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Email</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Plan</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Registered</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[--color-border-subtle]">
             {users?.map((user) => (
-              <tr key={user.userId}>
-                <td className="px-4 py-3 font-medium">
+              <tr key={user.userId} className="min-h-[44px]">
+                <td className="px-4 py-3 font-medium text-[--color-text-primary]">
                   {user.firstName} {user.lastName}
                 </td>
-                <td className="px-4 py-3 text-gray-600">{user.email}</td>
+                <td className="px-4 py-3 text-[--color-text-secondary]">{user.email}</td>
                 <td className="px-4 py-3">
                   {user.planId ? (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-green-50 text-[--color-success] px-2.5 py-0.5 rounded-full font-medium">
                       {user.planId.slice(0, 8)}...
                     </span>
                   ) : (
-                    <span className="text-xs text-gray-400">None</span>
+                    <span className="text-xs text-[--color-text-tertiary]">None</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-gray-600">
+                <td className="px-4 py-3 text-[--color-text-secondary]">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
               </tr>

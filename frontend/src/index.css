@@ -1,1 +1,68 @@
 @import "tailwindcss";
+
+@theme {
+  /* ── Tier 1: Primitive tokens ── */
+  --color-coral-500: #FF385C;
+  --color-coral-600: #E31C5F;
+  --color-coral-700: #C21E4F;
+
+  --color-gray-900: #222222;
+  --color-gray-600: #717171;
+  --color-gray-400: #B0B0B0;
+  --color-gray-200: #DDDDDD;
+  --color-gray-100: #EBEBEB;
+  --color-gray-50: #F7F7F7;
+
+  --color-green-600: #008A05;
+  --color-amber-600: #E07912;
+  --color-red-600: #C13515;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ── Tier 2: Semantic tokens ── */
+  --color-primary: var(--color-coral-500);
+  --color-primary-hover: var(--color-coral-600);
+  --color-primary-pressed: var(--color-coral-700);
+
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-400);
+
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: var(--color-gray-50);
+
+  --color-border-default: var(--color-gray-200);
+  --color-border-subtle: var(--color-gray-100);
+
+  --color-success: var(--color-green-600);
+  --color-warning: var(--color-amber-600);
+  --color-error: var(--color-red-600);
+}
+
+/* ── Base styles ── */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Focus-visible ring for accessibility ── */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove focus outline when not using keyboard */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Smooth transitions ── */
+button, a, input, textarea, select {
+  transition: all 150ms ease;
+}

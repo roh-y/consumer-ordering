@@ -12,60 +12,91 @@ export default function PlansPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">
+      <div className="bg-red-50 text-[--color-error] p-4 rounded-xl text-sm">
         Failed to load plans. Please try again later.
       </div>
     )
   }
 
+  const sorted = [...(plans || [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-2">Choose Your Plan</h1>
-      <p className="text-gray-500 text-sm mb-6">Select the perfect wireless plan for your needs</p>
+      {/* Hero */}
+      <div className="text-center mb-10">
+        <h1 className="text-[32px] font-extrabold text-[--color-text-primary] mb-2">
+          Find the perfect plan
+        </h1>
+        <p className="text-[--color-text-secondary] text-base">
+          Simple pricing, no hidden fees. Switch or cancel anytime.
+        </p>
+      </div>
 
-      <div className="space-y-4">
-        {plans?.map((plan) => (
+      {/* Plan cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {sorted.map((plan) => (
           <div
             key={plan.planId}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+            className="relative bg-white rounded-xl shadow-sm p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group"
+            onClick={() => navigate(`/plans/${plan.planId}`)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && navigate(`/plans/${plan.planId}`)}
           >
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">{plan.name}</h2>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-indigo-600">${plan.pricePerMonth}</span>
-                <span className="text-gray-500 text-sm">/mo</span>
-              </div>
+            {/* Badge */}
+            {plan.badge && (
+              <span className="absolute top-4 right-4 bg-[--color-primary] text-white text-xs font-semibold px-3 py-1 rounded-full">
+                {plan.badge}
+              </span>
+            )}
+
+            {/* Data hero */}
+            <div className="text-4xl font-extrabold text-[--color-text-primary] mb-1">
+              {plan.dataGB === -1 ? 'Unlimited' : `${plan.dataGB} GB`}
             </div>
 
-            <p className="text-sm text-gray-600 mb-3">{plan.description}</p>
+            {/* Plan name + tagline */}
+            <h2 className="text-lg font-semibold text-[--color-text-primary]">{plan.name}</h2>
+            {plan.shortTagline && (
+              <p className="text-sm text-[--color-text-secondary] mt-0.5">{plan.shortTagline}</p>
+            )}
 
-            <div className="text-xs text-indigo-600 font-medium mb-2">
-              {plan.dataGB === -1 ? 'Unlimited data' : `${plan.dataGB} GB high-speed data`}
-            </div>
-
-            <ul className="space-y-1 mb-4">
-              {plan.features.map((feature) => (
-                <li key={feature} className="text-sm text-gray-600 flex items-start gap-2">
-                  <span className="text-green-500 mt-0.5">&#10003;</span>
+            {/* Features */}
+            <ul className="mt-4 space-y-1.5 mb-5">
+              {plan.features.slice(0, 4).map((feature) => (
+                <li key={feature} className="text-sm text-[--color-text-secondary] flex items-start gap-2">
+                  <svg className="w-4 h-4 text-[--color-success] mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
                   {feature}
                 </li>
               ))}
             </ul>
 
-            <button
-              onClick={() => navigate(`/plans/${plan.planId}`)}
-              className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
-            >
-              Select Plan
-            </button>
+            {/* Price + CTA */}
+            <div className="flex items-end justify-between mt-auto">
+              <div>
+                <span className="text-3xl font-bold text-[--color-text-primary]">${plan.pricePerMonth}</span>
+                <span className="text-sm text-[--color-text-secondary]">/mo</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate(`/plans/${plan.planId}`)
+                }}
+                className="bg-[--color-primary] hover:bg-[--color-primary-hover] active:bg-[--color-primary-pressed] active:scale-[0.98] text-white text-sm font-semibold px-6 min-h-[44px] rounded-full transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
+              >
+                Select Plan
+              </button>
+            </div>
           </div>
         ))}
       </div>

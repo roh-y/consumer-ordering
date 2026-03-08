@@ -19,4 +19,7 @@ public class PlanResponse {
     private double pricePerMonth;
     private int dataGB;
     private List<String> features;
+    private String badge;
+    private int sortOrder;
+    private String shortTagline;
 }

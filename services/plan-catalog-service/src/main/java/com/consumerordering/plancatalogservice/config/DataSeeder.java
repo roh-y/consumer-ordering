@@ -38,6 +38,8 @@ public class DataSeeder implements CommandLineRunner {
                     "5 GB high-speed data",
                     "Mexico & Canada included"
                 ))
+                .sortOrder(1)
+                .shortTagline("Perfect for light users")
                 .build(),
 
             Plan.builder()
@@ -53,6 +55,9 @@ public class DataSeeder implements CommandLineRunner {
                     "Disney+ Basic included",
                     "Mexico & Canada included"
                 ))
+                .sortOrder(2)
+                .badge("Most Popular")
+                .shortTagline("Great balance of data & value")
                 .build(),
 
             Plan.builder()
@@ -69,6 +74,9 @@ public class DataSeeder implements CommandLineRunner {
                     "25 GB mobile hotspot",
                     "International texting"
                 ))
+                .sortOrder(3)
+                .badge("Best Value")
+                .shortTagline("For power users & streamers")
                 .build(),
 
             Plan.builder()
@@ -86,6 +94,8 @@ public class DataSeeder implements CommandLineRunner {
                     "International calling & texting",
                     "Smartwatch & tablet plan included"
                 ))
+                .sortOrder(4)
+                .shortTagline("No limits, no worries")
                 .build()
         );
 

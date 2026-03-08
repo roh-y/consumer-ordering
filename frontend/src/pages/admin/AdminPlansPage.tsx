@@ -9,6 +9,9 @@ const emptyForm: CreatePlanRequest = {
   pricePerMonth: 0,
   dataGB: 0,
   features: [],
+  badge: '',
+  sortOrder: 0,
+  shortTagline: '',
 }
 
 export default function AdminPlansPage() {
@@ -64,6 +67,9 @@ export default function AdminPlansPage() {
       pricePerMonth: plan.pricePerMonth,
       dataGB: plan.dataGB,
       features: plan.features,
+      badge: plan.badge || '',
+      sortOrder: plan.sortOrder || 0,
+      shortTagline: plan.shortTagline || '',
     })
     setFeaturesText(plan.features.join('\n'))
     setShowModal(true)
@@ -78,7 +84,12 @@ export default function AdminPlansPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const data = { ...form, features: featuresText.split('\n').filter((f) => f.trim()) }
+    const data = {
+      ...form,
+      features: featuresText.split('\n').filter((f) => f.trim()),
+      badge: form.badge || undefined,
+      shortTagline: form.shortTagline || undefined,
+    }
     if (editingPlan) {
       updateMutation.mutate({ planId: editingPlan.planId, data })
     } else {
@@ -86,44 +97,63 @@ export default function AdminPlansPage() {
     }
   }
 
+  const inputClass =
+    'w-full px-4 h-12 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]'
+
   if (isLoading) {
-    return <div className="text-center text-gray-500 py-8">Loading plans...</div>
+    return (
+      <div className="flex justify-center py-16">
+        <div className="animate-spin h-8 w-8 border-4 border-[--color-primary] border-t-transparent rounded-full" />
+      </div>
+    )
   }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Plans</h2>
+        <h2 className="text-lg font-semibold text-[--color-text-primary]">Plans</h2>
         <button
           onClick={openCreate}
-          className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-700"
+          className="bg-[--color-primary] hover:bg-[--color-primary-hover] text-white px-5 min-h-[44px] rounded-full text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
         >
           + Create Plan
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-[--color-bg-secondary] border-b border-[--color-border-default]">
             <tr>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Name</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Price</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Data</th>
-              <th className="text-right px-4 py-2 font-medium text-gray-600">Actions</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Name</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Price</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Data</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Badge</th>
+              <th className="text-left px-4 py-3 font-medium text-[--color-text-secondary]">Order</th>
+              <th className="text-right px-4 py-3 font-medium text-[--color-text-secondary]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[--color-border-subtle]">
             {plans?.map((plan) => (
-              <tr key={plan.planId}>
-                <td className="px-4 py-3 font-medium">{plan.name}</td>
-                <td className="px-4 py-3">${plan.pricePerMonth}/mo</td>
-                <td className="px-4 py-3">
+              <tr key={plan.planId} className="min-h-[44px]">
+                <td className="px-4 py-3 font-medium text-[--color-text-primary]">{plan.name}</td>
+                <td className="px-4 py-3 text-[--color-text-secondary]">${plan.pricePerMonth}/mo</td>
+                <td className="px-4 py-3 text-[--color-text-secondary]">
                   {plan.dataGB === -1 ? 'Unlimited' : `${plan.dataGB} GB`}
                 </td>
+                <td className="px-4 py-3">
+                  {plan.badge ? (
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-[--color-primary] text-white">
+                      {plan.badge}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[--color-text-tertiary]">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-[--color-text-secondary]">{plan.sortOrder ?? '—'}</td>
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => openEdit(plan)}
-                    className="text-indigo-600 hover:underline text-xs mr-3"
+                    className="text-[--color-primary] hover:text-[--color-primary-hover] text-xs font-medium mr-3 min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded"
                   >
                     Edit
                   </button>
@@ -131,13 +161,13 @@ export default function AdminPlansPage() {
                     <>
                       <button
                         onClick={() => deleteMutation.mutate(plan.planId)}
-                        className="text-red-600 hover:underline text-xs mr-2"
+                        className="text-[--color-error] hover:underline text-xs font-medium mr-2 min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded"
                       >
                         Confirm
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(null)}
-                        className="text-gray-500 hover:underline text-xs"
+                        className="text-[--color-text-secondary] hover:underline text-xs min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded"
                       >
                         Cancel
                       </button>
@@ -145,7 +175,7 @@ export default function AdminPlansPage() {
                   ) : (
                     <button
                       onClick={() => setDeleteConfirm(plan.planId)}
-                      className="text-red-600 hover:underline text-xs"
+                      className="text-[--color-error] hover:underline text-xs font-medium min-h-[44px] focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2 rounded"
                     >
                       Delete
                     </button>
@@ -157,34 +187,35 @@ export default function AdminPlansPage() {
         </table>
       </div>
 
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+            <h3 className="text-lg font-semibold text-[--color-text-primary] mb-4">
               {editingPlan ? 'Edit Plan' : 'Create Plan'}
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">Name</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={inputClass}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">Description</label>
                 <input
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={inputClass}
                   required
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
                     Price/Month ($)
                   </label>
                   <input
@@ -192,46 +223,81 @@ export default function AdminPlansPage() {
                     step="0.01"
                     value={form.pricePerMonth}
                     onChange={(e) => setForm({ ...form, pricePerMonth: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={inputClass}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
                     Data (GB, -1=unlimited)
                   </label>
                   <input
                     type="number"
                     value={form.dataGB}
                     onChange={(e) => setForm({ ...form, dataGB: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className={inputClass}
                     required
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                    Badge (optional)
+                  </label>
+                  <input
+                    value={form.badge || ''}
+                    onChange={(e) => setForm({ ...form, badge: e.target.value })}
+                    className={inputClass}
+                    placeholder="e.g. Most Popular"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                    Sort Order
+                  </label>
+                  <input
+                    type="number"
+                    value={form.sortOrder || 0}
+                    onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) })}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
+                  Short Tagline (optional)
+                </label>
+                <input
+                  value={form.shortTagline || ''}
+                  onChange={(e) => setForm({ ...form, shortTagline: e.target.value })}
+                  className={inputClass}
+                  placeholder="e.g. Perfect for light users"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[--color-text-secondary] mb-2">
                   Features (one per line)
                 </label>
                 <textarea
                   value={featuresText}
                   onChange={(e) => setFeaturesText(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-3 border border-[--color-border-default] rounded-lg text-sm focus:outline-none focus:border-[--color-gray-900] focus:ring-1 focus:ring-[--color-gray-900]"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 bg-[--color-primary] hover:bg-[--color-primary-hover] text-white min-h-[44px] rounded-full font-semibold text-sm disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
                 >
                   {editingPlan ? 'Update' : 'Create'}
                 </button>
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
+                  className="flex-1 border border-[--color-border-default] text-[--color-text-primary] min-h-[44px] rounded-full font-semibold text-sm hover:bg-[--color-bg-secondary] transition-colors focus-visible:ring-2 focus-visible:ring-[--color-primary] focus-visible:ring-offset-2"
                 >
                   Cancel
                 </button>
