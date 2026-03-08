@@ -36,8 +36,12 @@ def make_signed_request(method, url, credentials, region, body=None):
     """Make a SigV4-signed request to OpenSearch Serverless."""
     headers = {"Content-Type": "application/json"} if body else {}
 
-    # Sign the request
+    # Sign the request.
+    # IMPORTANT: Remove content-length before signing — AOSS rejects it as a
+    # signed header and returns 403. The requests library adds it back unsigned.
     aws_request = AWSRequest(method=method, url=url, data=body, headers=headers)
+    if "content-length" in aws_request.headers:
+        del aws_request.headers["content-length"]
     SigV4Auth(credentials, "aoss", region).add_auth(aws_request)
 
     # Send via requests library (handles headers and body correctly)
