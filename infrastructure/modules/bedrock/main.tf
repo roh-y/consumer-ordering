@@ -146,7 +146,7 @@ resource "aws_iam_role_policy" "agent" {
         Sid      = "InvokeModel"
         Effect   = "Allow"
         Action   = "bedrock:InvokeModel"
-        Resource = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+        Resource = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.nova-lite-v1:0"
       },
       {
         Sid    = "RetrieveKB"
@@ -166,7 +166,7 @@ resource "aws_iam_role_policy" "agent" {
 resource "aws_bedrockagent_agent" "support" {
   agent_name                  = "${local.prefix}-support-agent"
   agent_resource_role_arn     = aws_iam_role.agent.arn
-  foundation_model            = "anthropic.claude-3-haiku-20240307-v1:0"
+  foundation_model            = "amazon.nova-lite-v1:0"
   idle_session_ttl_in_seconds = 600
 
   instruction = <<-EOT
