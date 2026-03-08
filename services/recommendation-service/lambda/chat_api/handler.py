@@ -58,10 +58,15 @@ def handler(event, context):
         user_id = claims.get("sub", "anonymous")
 
         # Build session attributes so the agent knows the current user
+        # promptSessionAttributes are visible to the model in its prompt
+        # sessionAttributes are passed through to action group Lambdas
         session_state = {
             "sessionAttributes": {
                 "userId": user_id,
-            }
+            },
+            "promptSessionAttributes": {
+                "userId": user_id,
+            },
         }
 
         # Invoke Bedrock Agent

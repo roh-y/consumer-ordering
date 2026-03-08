@@ -33,6 +33,11 @@ def handler(event, context):
     # Build a dict of param name -> value for easy access
     params = {p["name"]: p["value"] for p in parameters} if parameters else {}
 
+    # Fallback: inject userId from session attributes if not in params
+    session_attrs = event.get("sessionAttributes", {})
+    if "userId" not in params and "userId" in session_attrs:
+        params["userId"] = session_attrs["userId"]
+
     try:
         if api_path == "/getOrderStatus" and http_method == "GET":
             result = get_order_status(params)
@@ -46,6 +51,8 @@ def handler(event, context):
             result = get_current_plan(params)
         elif api_path == "/changePlan" and http_method == "POST":
             body_params = _extract_body_params(request_body)
+            if "userId" not in body_params and "userId" in session_attrs:
+                body_params["userId"] = session_attrs["userId"]
             result = change_plan(body_params)
         else:
             result = {"error": f"Unknown action: {http_method} {api_path}"}
