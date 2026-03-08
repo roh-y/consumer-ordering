@@ -40,7 +40,7 @@ resource "aws_opensearchserverless_security_policy" "network" {
           ResourceType = "collection"
         }
       ]
-      AllowFromPublic = true
+      AllowFromPublic = false
     }
   ])
 }

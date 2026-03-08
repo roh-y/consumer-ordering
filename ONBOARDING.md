@@ -4,7 +4,7 @@ Welcome to the **Consumer Ordering** platform — a microservices-based wireless
 
 > **Prerequisites you should have before starting:**
 > - GitHub repo access
-> - AWS IAM credentials (account `187602084266`)
+> - AWS IAM credentials (get account ID from team lead)
 > - Java 21, Node.js 22, Docker, AWS CLI v2, Terraform 1.6+
 
 ---

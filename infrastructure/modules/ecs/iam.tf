@@ -84,7 +84,7 @@ resource "aws_iam_policy" "ecs_task" {
           "ses:SendEmail",
           "ses:SendRawEmail",
         ]
-        Resource = "*"
+        Resource = var.ses_identity_arn
       },
       {
         Sid    = "CognitoAccess"

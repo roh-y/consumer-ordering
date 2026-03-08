@@ -67,3 +67,9 @@ variable "chat_api_lambda_function_name" {
   type        = string
   default     = ""
 }
+
+variable "allowed_origins" {
+  description = "List of allowed CORS origins"
+  type        = list(string)
+  default     = ["*"]
+}

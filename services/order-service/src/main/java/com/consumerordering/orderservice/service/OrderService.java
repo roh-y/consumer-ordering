@@ -145,6 +145,9 @@ public class OrderService {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> fetchPlan(String planId) {
+        if (!planId.matches("^[a-zA-Z0-9_-]+$")) {
+            throw new IllegalArgumentException("Invalid plan ID format");
+        }
         RestTemplate restTemplate = new RestTemplate();
         String url = planCatalogServiceUrl + "/api/plans/" + planId;
         return restTemplate.getForObject(url, Map.class);

@@ -61,3 +61,9 @@ variable "bedrock_agent_alias_id" {
   description = "Bedrock Agent Alias ID"
   type        = string
 }
+
+variable "allowed_origin" {
+  description = "Allowed CORS origin for chat API Lambda"
+  type        = string
+  default     = "*"
+}

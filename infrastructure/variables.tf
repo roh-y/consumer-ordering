@@ -56,6 +56,14 @@ variable "ses_sender_email" {
   default     = "noreply@example.com"
 }
 
+# --- CORS ---
+
+variable "allowed_origins" {
+  description = "Allowed CORS origins for API Gateway and Lambda (e.g., CloudFront domain)"
+  type        = list(string)
+  default     = ["*"]
+}
+
 # --- GitHub Actions ---
 
 variable "github_repository" {

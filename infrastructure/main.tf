@@ -116,6 +116,7 @@ module "ecs" {
   ]
 
   cognito_user_pool_arn = module.cognito.user_pool_arn
+  ses_identity_arn      = module.ses.sender_email_arn
 
   services = {
     "user-service" = {
@@ -218,6 +219,8 @@ module "lambda_functions" {
 
   bedrock_agent_id       = module.bedrock.agent_id
   bedrock_agent_alias_id = module.bedrock.agent_alias_id
+
+  allowed_origin = length(var.allowed_origins) > 0 ? var.allowed_origins[0] : "*"
 }
 
 # --- API Gateway ---
@@ -241,6 +244,8 @@ module "api_gateway" {
   enable_chat_api               = true
   chat_api_lambda_invoke_arn    = module.lambda_functions.chat_api_lambda_invoke_arn
   chat_api_lambda_function_name = module.lambda_functions.chat_api_lambda_function_name
+
+  allowed_origins = var.allowed_origins
 }
 
 # --- CloudFront + S3 ---

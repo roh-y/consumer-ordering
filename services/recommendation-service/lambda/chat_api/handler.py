@@ -13,10 +13,11 @@ bedrock_agent_runtime = boto3.client("bedrock-agent-runtime")
 
 AGENT_ID = os.environ["BEDROCK_AGENT_ID"]
 AGENT_ALIAS_ID = os.environ["BEDROCK_AGENT_ALIAS_ID"]
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 
 # CORS headers for all responses
 CORS_HEADERS = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
     "Access-Control-Allow-Headers": "Authorization,Content-Type",
     "Access-Control-Allow-Methods": "POST,OPTIONS",
     "Content-Type": "application/json",
@@ -24,8 +25,6 @@ CORS_HEADERS = {
 
 
 def handler(event, context):
-    print(f"Event: {json.dumps(event)}")
-
     # Handle preflight
     http_method = event.get("requestContext", {}).get("http", {}).get("method", "")
     if http_method == "OPTIONS":

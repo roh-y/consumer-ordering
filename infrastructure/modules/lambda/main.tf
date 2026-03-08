@@ -186,6 +186,7 @@ resource "aws_lambda_function" "chat_api" {
     variables = {
       BEDROCK_AGENT_ID       = var.bedrock_agent_id
       BEDROCK_AGENT_ALIAS_ID = var.bedrock_agent_alias_id
+      ALLOWED_ORIGIN         = var.allowed_origin
     }
   }
 

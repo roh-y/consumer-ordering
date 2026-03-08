@@ -50,6 +50,11 @@ variable "cognito_user_pool_arn" {
   type        = string
 }
 
+variable "ses_identity_arn" {
+  description = "ARN of the SES email identity for sending emails"
+  type        = string
+}
+
 variable "log_group_names" {
   description = "Map of service name to CloudWatch log group name"
   type        = map(string)

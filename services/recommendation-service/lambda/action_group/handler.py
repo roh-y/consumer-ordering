@@ -23,8 +23,7 @@ SQS_ORDER_EVENTS_QUEUE_URL = os.environ.get("SQS_ORDER_EVENTS_QUEUE_URL", "")
 
 
 def handler(event, context):
-    print(f"Event: {json.dumps(event)}")
-
+    # Log routing info only — avoid logging full event which may contain PII
     api_path = event.get("apiPath", "")
     http_method = event.get("httpMethod", "GET")
     parameters = event.get("parameters", [])
@@ -163,7 +162,7 @@ def get_user_profile(params):
 def list_plans():
     """List all available wireless plans."""
     table = dynamodb.Table(PLANS_TABLE)
-    response = table.scan()
+    response = table.scan(Limit=100)
 
     items = response.get("Items", [])
     plans = []
@@ -251,8 +250,9 @@ def change_plan(params):
             orders_table.update_item(
                 Key={"orderId": order["orderId"], "userId": user_id},
                 UpdateExpression="SET #s = :s, updatedAt = :u",
+                ConditionExpression="#s = :active",
                 ExpressionAttributeNames={"#s": "status"},
-                ExpressionAttributeValues={":s": "CANCELLED", ":u": now},
+                ExpressionAttributeValues={":s": "CANCELLED", ":u": now, ":active": "ACTIVE"},
             )
 
     # Create new order
