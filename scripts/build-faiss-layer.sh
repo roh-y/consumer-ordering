@@ -22,7 +22,14 @@ docker run --rm --platform linux/amd64 \
   -c "
     pip install -q faiss-cpu numpy -t /tmp/python &&
     cd /tmp &&
-    zip -qr /output/faiss-layer.zip python
+    python3 -c \"
+import zipfile, os
+with zipfile.ZipFile('/output/faiss-layer.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+    for root, dirs, files in os.walk('python'):
+        for f in files:
+            fp = os.path.join(root, f)
+            zf.write(fp)
+\"
   "
 
 echo "==> Layer built: $OUTPUT_DIR/faiss-layer.zip ($(du -h "$OUTPUT_DIR/faiss-layer.zip" | cut -f1))"
