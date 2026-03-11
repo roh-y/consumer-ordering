@@ -16,9 +16,10 @@ mkdir -p "$OUTPUT_DIR"
 echo "==> Building FAISS Lambda layer for python3.12 x86_64..."
 
 docker run --rm --platform linux/amd64 \
+  --entrypoint bash \
   -v "$OUTPUT_DIR:/output" \
   public.ecr.aws/lambda/python:3.12 \
-  bash -c "
+  -c "
     pip install -q faiss-cpu numpy -t /tmp/python &&
     cd /tmp &&
     zip -qr /output/faiss-layer.zip python
