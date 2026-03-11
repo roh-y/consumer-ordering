@@ -94,6 +94,14 @@ __pycache__/
 *.egg-info/
 
 # ========================
+# FAISS / Lambda Layers (generated at build time)
+# ========================
+services/recommendation-service/lambda/kb_search/index_data/faiss_index.bin
+services/recommendation-service/lambda/kb_search/index_data/chunks_metadata.json
+infrastructure/modules/lambda/files/faiss-layer.zip
+infrastructure/modules/lambda/files/*.zip
+
+# ========================
 # Misc
 # ========================
 *.bak

@@ -18,9 +18,9 @@ Frontend (React)  →  API Gateway  →  Microservices (Spring Boot on ECS/Farga
                                   →  DynamoDB (NoSQL database)
                                   →  Cognito (Authentication)
                                   →  SQS/SNS (Messaging)
-                                  →  Lambda → Bedrock Agent (Claude 3 Haiku)
-                                              ├── Knowledge Base (OpenSearch + S3)
-                                              └── Action Group (DynamoDB queries)
+                                  →  Lambda → Bedrock Agent (Nova Lite)
+                                              ├── KB Search Lambda (FAISS vector search)
+                                              └── Action Group Lambda (DynamoDB queries)
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
@@ -33,7 +33,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design.
 | Backend | Java 21, Spring Boot 3.4, AWS SDK v2 |
 | Auth | Amazon Cognito (JWT tokens) |
 | Database | Amazon DynamoDB |
-| AI/Chat | Amazon Bedrock (Claude 3 Haiku), OpenSearch Serverless |
+| AI/Chat | Amazon Bedrock (Nova Lite), FAISS (embedded vector search) |
 | Infrastructure | Terraform |
 | CI/CD | GitHub Actions |
 | Containers | Docker, ECS/Fargate |
@@ -115,14 +115,13 @@ consumer-ordering/
 │   ├── order-service/         # Spring Boot — orders + SQS events
 │   ├── notification-service/  # Spring Boot — SQS consumer + SES emails
 │   └── recommendation-service/# Python Lambda — AI support agent
-│       ├── knowledge-base/    #   Plan docs, FAQs, policies (uploaded to S3)
-│       └── lambda/            #   action_group/ + chat_api/ handlers
+│       ├── knowledge-base/    #   Plan docs, FAQs, policies (source for FAISS index)
+│       └── lambda/            #   action_group/ + chat_api/ + kb_search/ handlers
 ├── frontend/                  # React + Vite SPA (includes ChatWidget)
 ├── infrastructure/            # Terraform modules
 │   └── modules/
-│       ├── bedrock/           #   Bedrock Agent, Knowledge Base, S3
-│       ├── opensearch/        #   OpenSearch Serverless (vector store)
-│       ├── lambda/            #   Lambda functions for agent
+│       ├── bedrock/           #   Bedrock Agent + action groups
+│       ├── lambda/            #   Lambda functions (actions, KB search, chat API)
 │       └── ...                #   vpc, cognito, dynamodb, ecs, etc.
 ├── scripts/                   # Setup + seed + KB upload scripts
 ├── .github/workflows/         # CI + Deploy pipelines
@@ -144,8 +143,9 @@ make tf-plan            # Preview Terraform changes
 make tf-apply           # Apply Terraform changes
 
 # Bedrock Agent
-make upload-kb-docs     # Upload knowledge base docs to S3, trigger ingestion
-make deploy-agent       # Deploy agent infrastructure + upload KB docs
+make build-faiss-index  # Build FAISS vector index from KB docs
+make build-faiss-layer  # Build FAISS Lambda layer (requires Docker)
+make deploy-agent       # Build index + layer, then deploy agent infrastructure
 
 # Deploy to AWS
 make deploy-login       # Login to Amazon ECR
@@ -169,8 +169,7 @@ This project uses AWS free tier where possible:
 - **Cognito**: Free for first 50,000 MAU
 - **DynamoDB**: On-demand pricing, essentially $0 for demo usage
 - **VPC + NAT Gateway**: ~$1/day when running (destroy when not in use)
-- **OpenSearch Serverless**: ~$24/month minimum (2 OCU baseline for vector search collection)
-- **Bedrock (Claude 3 Haiku + Titan Embeddings)**: Pay-per-token, ~$1-2/month at demo usage
+- **Bedrock (Nova Lite + Titan Embeddings)**: Pay-per-token, ~$1-2/month at demo usage
 - **Lambda**: First 1M requests/month free, essentially $0
 
-**Total with AI agent**: ~$25-30/month. Without deploying the Bedrock/OpenSearch modules, cost stays under $5/month.
+**Total with AI agent**: ~$3-5/month (no OpenSearch — uses embedded FAISS index in Lambda). Without deploying the Bedrock module, cost stays under $5/month.

@@ -322,8 +322,8 @@ The recommendation service is an AI-powered customer support agent built with Am
 ```
 User → ChatWidget → API Gateway (POST /api/agent/chat)
                          → Chat API Lambda (extracts JWT userId, invokes Bedrock Agent)
-                              → Bedrock Agent (Claude 3 Haiku)
-                                   ├── Knowledge Base (RAG via OpenSearch + S3)
+                              → Bedrock Agent (Nova Lite)
+                                   ├── KB Search Lambda (FAISS vector search)
                                    └── Action Group Lambda (DynamoDB queries)
 ```
 
@@ -331,12 +331,13 @@ User → ChatWidget → API Gateway (POST /api/agent/chat)
 
 | File | Purpose |
 |------|---------|
-| `services/recommendation-service/knowledge-base/` | Markdown docs uploaded to S3 for RAG |
+| `services/recommendation-service/knowledge-base/` | Markdown docs used to build the FAISS vector index |
 | `services/recommendation-service/lambda/action_group/handler.py` | DynamoDB queries (orders, users, plans) |
+| `services/recommendation-service/lambda/kb_search/handler.py` | FAISS vector search for KB queries |
 | `services/recommendation-service/lambda/chat_api/handler.py` | API Gateway → Bedrock Agent bridge |
-| `infrastructure/modules/bedrock/main.tf` | Agent, KB, action group, S3 bucket |
-| `infrastructure/modules/opensearch/main.tf` | OpenSearch Serverless vector collection |
-| `infrastructure/modules/lambda/main.tf` | Lambda functions + IAM roles |
+| `scripts/build-faiss-index.py` | Build-time script to chunk, embed, and index KB docs |
+| `infrastructure/modules/bedrock/main.tf` | Agent + action groups |
+| `infrastructure/modules/lambda/main.tf` | Lambda functions + IAM roles + FAISS layer |
 | `frontend/src/components/ChatWidget.tsx` | Floating chat UI component |
 | `frontend/src/store/chatStore.ts` | Zustand store for chat state |
 | `frontend/src/services/chatService.ts` | API client for chat endpoint |
@@ -347,28 +348,33 @@ Before deploying the agent, you must enable two foundation models in the AWS Bed
 
 1. Go to **Amazon Bedrock** → **Model access** in the AWS Console
 2. Request access to:
-   - **Anthropic Claude 3 Haiku** (for the agent's conversational model)
+   - **Amazon Nova Lite** (for the agent's conversational model)
    - **Amazon Titan Text Embeddings V2** (for the knowledge base embeddings)
 3. Wait for access to be granted (usually instant)
+
+You also need **Docker** installed to build the FAISS Lambda layer.
 
 ### Initial Deployment
 
 ```bash
-# 1. Deploy infrastructure (creates OpenSearch, Bedrock Agent, Lambdas, S3 bucket)
+# 1. Build the FAISS index from KB docs (requires: pip install faiss-cpu numpy boto3)
+make build-faiss-index
+
+# 2. Build the FAISS Lambda layer (requires Docker)
+make build-faiss-layer
+
+# 3. Deploy infrastructure (creates Bedrock Agent, Lambdas)
 cd infrastructure
 terraform init
-terraform apply    # OpenSearch collection takes 5-10 minutes to activate
+terraform apply
 
-# 2. Upload knowledge base documents and trigger ingestion
-make upload-kb-docs    # Syncs docs to S3, starts Bedrock ingestion (2-5 min)
-
-# 3. Deploy the frontend with the chat widget
+# 4. Deploy the frontend with the chat widget
 make deploy-frontend
 ```
 
 Or use the combined target:
 ```bash
-make deploy-agent    # Runs terraform apply + upload-kb-docs
+make deploy-agent    # Builds FAISS index + layer, then runs terraform apply
 ```
 
 ### How to Update Knowledge Base Content
@@ -381,11 +387,11 @@ The agent's knowledge comes from markdown files in `services/recommendation-serv
    - `comparison/` — Plan comparison tables and guides
    - `policies/` — Return policy, cancellation rules
 
-2. **Re-upload and re-ingest**:
+2. **Rebuild the FAISS index and redeploy**:
    ```bash
-   make upload-kb-docs
+   make deploy-agent
    ```
-   This syncs the files to S3 and triggers a Bedrock ingestion job. The agent will use the updated content within 2-5 minutes.
+   This rebuilds the vector index from the KB docs, rebuilds the Lambda layer, and runs `terraform apply` to update the Lambda.
 
 3. **Test** in the Bedrock console "Test" panel or via the frontend chat widget.
 

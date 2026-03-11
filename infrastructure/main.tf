@@ -181,27 +181,7 @@ module "ecs" {
   }
 }
 
-# --- Bedrock Agent (Knowledge Base role created first — no OpenSearch dependency) ---
-module "bedrock" {
-  source       = "./modules/bedrock"
-  project_name = var.project_name
-  environment  = var.environment
-
-  opensearch_collection_arn = module.opensearch.collection_arn
-  opensearch_index_created  = module.opensearch.index_created
-  action_group_lambda_arn   = module.lambda_functions.action_group_lambda_arn
-}
-
-# --- OpenSearch Serverless (vector store for Bedrock KB) ---
-module "opensearch" {
-  source       = "./modules/opensearch"
-  project_name = var.project_name
-  environment  = var.environment
-
-  bedrock_kb_role_arn = module.bedrock.kb_role_arn
-}
-
-# --- Lambda Functions (action group + chat API) ---
+# --- Lambda Functions (action group + kb search + chat API) ---
 module "lambda_functions" {
   source       = "./modules/lambda"
   project_name = var.project_name
@@ -221,6 +201,16 @@ module "lambda_functions" {
   bedrock_agent_alias_id = module.bedrock.agent_alias_id
 
   allowed_origin = length(var.allowed_origins) > 0 ? var.allowed_origins[0] : "*"
+}
+
+# --- Bedrock Agent (uses FAISS-based KB search Lambda) ---
+module "bedrock" {
+  source       = "./modules/bedrock"
+  project_name = var.project_name
+  environment  = var.environment
+
+  action_group_lambda_arn = module.lambda_functions.action_group_lambda_arn
+  kb_search_lambda_arn    = module.lambda_functions.kb_search_lambda_arn
 }
 
 # --- API Gateway ---

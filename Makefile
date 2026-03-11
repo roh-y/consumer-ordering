@@ -1,4 +1,4 @@
-.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-notification-service test-notification-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all export-data import-data upload-kb-docs deploy-agent
+.PHONY: build test up down clean setup seed build-user-service test-user-service build-plan-catalog-service test-plan-catalog-service build-order-service test-order-service build-notification-service test-notification-service build-frontend test-frontend tf-init tf-plan tf-apply deploy-login deploy-service deploy-backend deploy-frontend deploy-all build-faiss-index build-faiss-layer deploy-agent
 
 # ========================
 # Top-Level Targets
@@ -148,10 +148,13 @@ deploy-all: deploy-backend deploy-frontend ## Deploy all services and frontend
 # Bedrock Agent
 # ========================
 
-upload-kb-docs: ## Upload knowledge base docs to S3 and trigger ingestion
-	./scripts/upload-kb-docs.sh
+build-faiss-index: ## Build FAISS vector index from KB docs (requires: pip install faiss-cpu numpy boto3)
+	python3 scripts/build-faiss-index.py
 
-deploy-agent: tf-apply upload-kb-docs ## Deploy Bedrock agent infrastructure and upload KB docs
+build-faiss-layer: ## Build FAISS Lambda layer (requires Docker)
+	chmod +x scripts/build-faiss-layer.sh && scripts/build-faiss-layer.sh
+
+deploy-agent: build-faiss-index build-faiss-layer tf-apply ## Build FAISS index + layer, then deploy agent infrastructure
 
 # ========================
 # Help

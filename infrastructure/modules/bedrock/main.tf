@@ -1,115 +1,13 @@
 # ===========================================================
-# Bedrock Agent + Knowledge Base
+# Bedrock Agent with FAISS-based Knowledge Base Search
 # ===========================================================
 
-# --- IAM Role for Knowledge Base ---
-
-resource "aws_iam_role" "kb" {
-  name = "${local.prefix}-bedrock-kb-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Principal = { Service = "bedrock.amazonaws.com" }
-        Action    = "sts:AssumeRole"
-        Condition = {
-          StringEquals = {
-            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
-          }
-        }
-      }
-    ]
-  })
-
-  tags = { Name = "${local.prefix}-bedrock-kb-role" }
+locals {
+  prefix = "${var.project_name}-${var.environment}"
 }
 
-resource "aws_iam_role_policy" "kb" {
-  name = "${local.prefix}-bedrock-kb-policy"
-  role = aws_iam_role.kb.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "EmbeddingModel"
-        Effect   = "Allow"
-        Action   = "bedrock:InvokeModel"
-        Resource = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.titan-embed-text-v2:0"
-      },
-      {
-        Sid      = "OpenSearchAccess"
-        Effect   = "Allow"
-        Action   = "aoss:APIAccessAll"
-        Resource = var.opensearch_collection_arn
-      },
-      {
-        Sid    = "S3Access"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:ListBucket",
-        ]
-        Resource = [
-          aws_s3_bucket.kb_docs.arn,
-          "${aws_s3_bucket.kb_docs.arn}/*",
-        ]
-      }
-    ]
-  })
-}
-
-# --- Knowledge Base ---
-
-# Ensure the vector index is created before KB references it
-resource "terraform_data" "wait_for_index" {
-  input = var.opensearch_index_created
-}
-
-resource "aws_bedrockagent_knowledge_base" "plans" {
-  name     = "${local.prefix}-plans-kb"
-  role_arn = aws_iam_role.kb.arn
-
-  depends_on = [terraform_data.wait_for_index]
-
-  knowledge_base_configuration {
-    type = "VECTOR"
-    vector_knowledge_base_configuration {
-      embedding_model_arn = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.titan-embed-text-v2:0"
-    }
-  }
-
-  storage_configuration {
-    type = "OPENSEARCH_SERVERLESS"
-    opensearch_serverless_configuration {
-      collection_arn    = var.opensearch_collection_arn
-      vector_index_name = "bedrock-knowledge-base-default-index"
-      field_mapping {
-        vector_field   = "bedrock-knowledge-base-default-vector"
-        text_field     = "AMAZON_BEDROCK_TEXT_CHUNK"
-        metadata_field = "AMAZON_BEDROCK_METADATA"
-      }
-    }
-  }
-
-  tags = { Name = "${local.prefix}-plans-kb" }
-}
-
-# --- Knowledge Base Data Source (S3) ---
-
-resource "aws_bedrockagent_data_source" "s3" {
-  name              = "${local.prefix}-kb-s3-source"
-  knowledge_base_id = aws_bedrockagent_knowledge_base.plans.id
-
-  data_source_configuration {
-    type = "S3"
-    s3_configuration {
-      bucket_arn = aws_s3_bucket.kb_docs.arn
-    }
-  }
-}
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 # --- IAM Role for Agent ---
 
@@ -147,15 +45,6 @@ resource "aws_iam_role_policy" "agent" {
         Effect   = "Allow"
         Action   = "bedrock:InvokeModel"
         Resource = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.nova-lite-v1:0"
-      },
-      {
-        Sid    = "RetrieveKB"
-        Effect = "Allow"
-        Action = [
-          "bedrock:Retrieve",
-          "bedrock:RetrieveAndGenerate",
-        ]
-        Resource = aws_bedrockagent_knowledge_base.plans.arn
       }
     ]
   })
@@ -173,20 +62,21 @@ resource "aws_bedrockagent_agent" "support" {
     You are a friendly and helpful customer support agent for a wireless phone plan company.
     Your primary responsibilities are:
 
-    1. **Answer questions about wireless plans**: Use the knowledge base to provide accurate
-       information about plan features, pricing, data limits, and comparisons. Always reference
-       specific plan names and prices from the knowledge base.
+    1. **Answer questions about wireless plans**: Use the searchKnowledgeBase action to look up
+       accurate information about plan features, pricing, data limits, and comparisons. Always
+       search the knowledge base first before answering plan-related questions. Reference specific
+       plan names and prices from the search results.
 
     2. **Check order status**: When a customer asks about their orders, use the getOrdersByUser
        action with their userId (available in session attributes) to retrieve their orders.
        For a specific order, use getOrderStatus with the orderId.
 
     3. **Recommend plans**: Based on the customer's described needs (data usage, budget,
-       features wanted), recommend the most appropriate plan. Explain why it's a good fit
-       and mention alternatives.
+       features wanted), use searchKnowledgeBase to look up plan details, then recommend
+       the most appropriate plan. Explain why it's a good fit and mention alternatives.
 
-    4. **Handle general support**: Answer billing questions, cancellation policies,
-       and account-related queries using the knowledge base.
+    4. **Handle general support**: For billing questions, cancellation policies, and
+       account-related queries, ALWAYS use searchKnowledgeBase to look up the answer first.
 
     5. **Check current plan**: When a customer asks about their current plan, use the
        getCurrentPlan action with their userId from session attributes to retrieve their
@@ -203,30 +93,23 @@ resource "aws_bedrockagent_agent" "support" {
     - CRITICAL: The customer's userId is ALWAYS provided in the prompt session attributes
       (the $prompt_session_attributes$ variable). You MUST use this userId for ALL actions.
       NEVER ask the customer for their userId — you already have it. Just use it directly.
+    - IMPORTANT: When a customer asks about plans, pricing, features, policies, billing,
+      cancellation, FAQs, or any general question, ALWAYS use the searchKnowledgeBase action
+      FIRST to retrieve accurate information. Never answer from memory alone.
     - Be concise but thorough. Use bullet points for comparisons.
     - Always mention specific prices and data limits — don't be vague.
     - If a customer asks about their orders, proactively look up their information
       using the userId from session attributes.
     - If you don't have enough information to answer, say so honestly and suggest
       the customer contact human support.
-    - Never make up plan details — only use information from the knowledge base.
+    - Never make up plan details — only use information from the knowledge base search results.
     - Keep responses focused and under 200 words unless a detailed comparison is requested.
   EOT
 
   tags = { Name = "${local.prefix}-support-agent" }
 }
 
-# --- Knowledge Base Association ---
-
-resource "aws_bedrockagent_agent_knowledge_base_association" "plans" {
-  agent_id             = aws_bedrockagent_agent.support.agent_id
-  agent_version        = "DRAFT"
-  knowledge_base_id    = aws_bedrockagent_knowledge_base.plans.id
-  description          = "Knowledge base containing wireless plan details, FAQs, comparisons, and policies"
-  knowledge_base_state = "ENABLED"
-}
-
-# --- Action Group (OpenAPI schema inline) ---
+# --- Action Group: Customer Actions (DynamoDB queries) ---
 
 resource "aws_bedrockagent_agent_action_group" "customer_actions" {
   agent_id          = aws_bedrockagent_agent.support.agent_id
@@ -484,6 +367,74 @@ resource "aws_bedrockagent_agent_action_group" "customer_actions" {
   }
 }
 
+# --- Action Group: Knowledge Base Search (FAISS-based) ---
+
+resource "aws_bedrockagent_agent_action_group" "kb_search" {
+  agent_id          = aws_bedrockagent_agent.support.agent_id
+  agent_version     = "DRAFT"
+  action_group_name = "KnowledgeBaseSearch"
+  description       = "Search the knowledge base for information about wireless plans, policies, FAQs, and comparisons"
+
+  action_group_executor {
+    lambda = var.kb_search_lambda_arn
+  }
+
+  api_schema {
+    payload = jsonencode({
+      openapi = "3.0.0"
+      info = {
+        title   = "Knowledge Base Search API"
+        version = "1.0.0"
+      }
+      paths = {
+        "/searchKnowledgeBase" = {
+          get = {
+            summary     = "Search the knowledge base for relevant information"
+            description = "Searches plan details, FAQs, policies, and comparisons. Use this whenever a customer asks about plans, pricing, features, billing, cancellation, or any general question."
+            operationId = "searchKnowledgeBase"
+            parameters = [
+              {
+                name        = "query"
+                in          = "query"
+                required    = true
+                description = "The search query describing what information to look up"
+                schema      = { type = "string" }
+              }
+            ]
+            responses = {
+              "200" = {
+                description = "Search results with relevant text passages"
+                content = {
+                  "application/json" = {
+                    schema = {
+                      type = "object"
+                      properties = {
+                        query = { type = "string" }
+                        resultCount = { type = "integer" }
+                        results = {
+                          type = "array"
+                          items = {
+                            type = "object"
+                            properties = {
+                              text   = { type = "string" }
+                              source = { type = "string" }
+                              score  = { type = "number" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+  }
+}
+
 # --- Agent Alias (required for runtime invocation) ---
 
 resource "aws_bedrockagent_agent_alias" "live" {
@@ -491,12 +442,11 @@ resource "aws_bedrockagent_agent_alias" "live" {
   agent_alias_name = "live"
 
   # Force alias update when agent config changes (publishes new version)
-  # Hash of instruction + schema ensures any content change triggers a new alias version
-  description = substr("v${sha256("${aws_bedrockagent_agent.support.instruction}${aws_bedrockagent_agent_action_group.customer_actions.description}")}", 0, 200)
+  description = substr("v${sha256("${aws_bedrockagent_agent.support.instruction}${aws_bedrockagent_agent_action_group.customer_actions.description}${aws_bedrockagent_agent_action_group.kb_search.description}")}", 0, 200)
 
   depends_on = [
-    aws_bedrockagent_agent_knowledge_base_association.plans,
     aws_bedrockagent_agent_action_group.customer_actions,
+    aws_bedrockagent_agent_action_group.kb_search,
   ]
 
   tags = { Name = "${local.prefix}-agent-live" }

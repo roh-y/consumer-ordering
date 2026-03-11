@@ -103,18 +103,3 @@ output "bedrock_agent_id" {
   value = module.root.bedrock_agent_id
 }
 
-output "bedrock_knowledge_base_id" {
-  value = module.root.bedrock_knowledge_base_id
-}
-
-output "opensearch_collection_endpoint" {
-  value = module.root.opensearch_collection_endpoint
-}
-
-output "kb_s3_bucket_name" {
-  value = module.root.kb_s3_bucket_name
-}
-
-output "bedrock_data_source_id" {
-  value = module.root.bedrock_data_source_id
-}

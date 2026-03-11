@@ -50,15 +50,14 @@ Suggested reading order for a new developer joining this project.
 
 ## Week 5: AI Customer Support Agent (Phase 4)
 
-12. **Read [AWS_SERVICES_GUIDE.md](AWS_SERVICES_GUIDE.md)** — Focus on the Bedrock, Bedrock Agents, Knowledge Base, and OpenSearch Serverless sections
+12. **Read [AWS_SERVICES_GUIDE.md](AWS_SERVICES_GUIDE.md)** — Focus on the Bedrock, Bedrock Agents, and FAISS Vector Search sections
 13. **Read [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)** — "How to Work with the Customer Support Agent" section covers setup, deployment, and modification
 14. **Read the Terraform modules** in this order:
-    - `infrastructure/modules/opensearch/main.tf` — How the vector store is configured
-    - `infrastructure/modules/bedrock/s3.tf` — S3 bucket for knowledge base docs
-    - `infrastructure/modules/bedrock/main.tf` — Agent, KB, action group, IAM roles
-    - `infrastructure/modules/lambda/main.tf` — Lambda functions and permissions
+    - `infrastructure/modules/bedrock/main.tf` — Agent, action groups, IAM roles
+    - `infrastructure/modules/lambda/main.tf` — Lambda functions (actions, KB search, chat API) and permissions
 15. **Read the Lambda code**:
     - `services/recommendation-service/lambda/action_group/handler.py` — How DynamoDB is queried for the agent
+    - `services/recommendation-service/lambda/kb_search/handler.py` — How FAISS vector search works
     - `services/recommendation-service/lambda/chat_api/handler.py` — How the API Gateway request becomes a Bedrock Agent invocation
 16. **Read the knowledge base documents**:
     - `services/recommendation-service/knowledge-base/plans/` — Plan detail docs

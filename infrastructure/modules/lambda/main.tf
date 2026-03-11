@@ -119,6 +119,90 @@ resource "aws_lambda_permission" "bedrock_invoke" {
 }
 
 # ===========================================================
+# KB Search Lambda — FAISS-based vector search for Bedrock Agent
+# ===========================================================
+
+data "archive_file" "kb_search" {
+  type        = "zip"
+  source_dir  = "${path.module}/../../../services/recommendation-service/lambda/kb_search"
+  output_path = "${path.module}/files/kb_search.zip"
+}
+
+resource "aws_lambda_layer_version" "faiss" {
+  filename            = "${path.module}/files/faiss-layer.zip"
+  layer_name          = "${local.prefix}-faiss-layer"
+  compatible_runtimes = ["python3.12"]
+  source_code_hash    = filebase64sha256("${path.module}/files/faiss-layer.zip")
+}
+
+resource "aws_iam_role" "kb_search" {
+  name = "${local.prefix}-kb-search-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "lambda.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = { Name = "${local.prefix}-kb-search-role" }
+}
+
+resource "aws_iam_role_policy" "kb_search" {
+  name = "${local.prefix}-kb-search-policy"
+  role = aws_iam_role.kb_search.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "InvokeEmbeddingModel"
+        Effect   = "Allow"
+        Action   = "bedrock:InvokeModel"
+        Resource = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.titan-embed-text-v2:0"
+      },
+      {
+        Sid    = "CloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+        ]
+        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+      }
+    ]
+  })
+}
+
+resource "aws_lambda_function" "kb_search" {
+  function_name    = "${local.prefix}-kb-search"
+  role             = aws_iam_role.kb_search.arn
+  handler          = "handler.handler"
+  runtime          = "python3.12"
+  timeout          = 30
+  memory_size      = 256
+  filename         = data.archive_file.kb_search.output_path
+  source_code_hash = data.archive_file.kb_search.output_base64sha256
+  layers           = [aws_lambda_layer_version.faiss.arn]
+
+  tags = { Name = "${local.prefix}-kb-search" }
+}
+
+# Allow Bedrock to invoke the KB search Lambda
+resource "aws_lambda_permission" "bedrock_invoke_kb_search" {
+  statement_id   = "AllowBedrockInvoke"
+  action         = "lambda:InvokeFunction"
+  function_name  = aws_lambda_function.kb_search.function_name
+  principal      = "bedrock.amazonaws.com"
+  source_account = data.aws_caller_identity.current.account_id
+}
+
+# ===========================================================
 # Chat API Lambda — POST /api/agent/chat → Bedrock Agent
 # ===========================================================
 

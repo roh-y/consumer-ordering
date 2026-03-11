@@ -25,7 +25,7 @@ env:
 
 jobs:
   # ---------------------------------------------------------
-  # Job 1: Terraform apply
+  # Job 1: Build FAISS index + Terraform apply
   # ---------------------------------------------------------
   terraform:
     name: Terraform Apply
@@ -47,6 +47,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build FAISS index from KB docs
+        run: |
+          pip install -q faiss-cpu numpy boto3
+          python scripts/build-faiss-index.py
+
+      - name: Build FAISS Lambda layer
+        run: |
+          chmod +x scripts/build-faiss-layer.sh
+          scripts/build-faiss-layer.sh
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -77,51 +92,7 @@ jobs:
           echo "ecr_registry=${registry}" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------
-  # Job 2: Upload Knowledge Base docs & trigger ingestion
-  # ---------------------------------------------------------
-  upload-kb-docs:
-    name: Upload KB Docs
-    runs-on: ubuntu-latest
-    needs: [terraform]
-    if: ${{ always() && !failure() && !cancelled() }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
-      - name: Get KB outputs from Terraform state
-        id: kb
-        working-directory: infrastructure
-        run: |
-          terraform init -input=false > /dev/null
-          echo "s3_bucket=$(terraform output -raw kb_s3_bucket_name)" >> "$GITHUB_OUTPUT"
-          echo "kb_id=$(terraform output -raw bedrock_knowledge_base_id)" >> "$GITHUB_OUTPUT"
-          echo "ds_id=$(terraform output -raw bedrock_data_source_id)" >> "$GITHUB_OUTPUT"
-
-      - name: Sync KB docs to S3
-        run: |
-          aws s3 sync services/recommendation-service/knowledge-base \
-            s3://${{ steps.kb.outputs.s3_bucket }}/ --delete
-
-      - name: Trigger Bedrock ingestion
-        run: |
-          aws bedrock-agent start-ingestion-job \
-            --knowledge-base-id ${{ steps.kb.outputs.kb_id }} \
-            --data-source-id ${{ steps.kb.outputs.ds_id }}
-          echo "Ingestion job started — takes 2-5 minutes to complete"
-
-  # ---------------------------------------------------------
-  # Job 3: Build & push backend Docker images
+  # Job 2: Build & push backend Docker images
   # ---------------------------------------------------------
   build-backend:
     name: "Build ${{ matrix.service }}"
@@ -166,7 +137,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ---------------------------------------------------------
-  # Job 4: Build & deploy frontend
+  # Job 3: Build & deploy frontend
   # ---------------------------------------------------------
   build-frontend:
     name: Build & Deploy Frontend
@@ -229,7 +200,7 @@ jobs:
             --paths "/*"
 
   # ---------------------------------------------------------
-  # Job 5: Force ECS redeployment
+  # Job 4: Force ECS redeployment
   # ---------------------------------------------------------
   deploy-backend:
     name: Deploy Backend Services
@@ -269,12 +240,12 @@ jobs:
             --force-new-deployment
 
   # ---------------------------------------------------------
-  # Job 6: Verify deployment
+  # Job 5: Verify deployment
   # ---------------------------------------------------------
   verify:
     name: Verify Deployment
     runs-on: ubuntu-latest
-    needs: [terraform, deploy-backend, build-frontend, upload-kb-docs]
+    needs: [terraform, deploy-backend, build-frontend]
     if: ${{ always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') && (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') }}
     steps:
       - name: Configure AWS credentials
@@ -320,7 +291,6 @@ jobs:
           echo "cognito_pool=$(terraform output -raw cognito_user_pool_id)" >> "$GITHUB_OUTPUT"
           echo "cognito_client=$(terraform output -raw cognito_client_id)" >> "$GITHUB_OUTPUT"
           echo "bedrock_agent_id=$(terraform output -raw bedrock_agent_id 2>/dev/null || echo 'N/A')" >> "$GITHUB_OUTPUT"
-          echo "kb_id=$(terraform output -raw bedrock_knowledge_base_id 2>/dev/null || echo 'N/A')" >> "$GITHUB_OUTPUT"
 
       - name: Deployment summary
         run: |
@@ -333,7 +303,6 @@ jobs:
           echo "| Terraform | ${{ needs.terraform.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Backend   | ${{ needs.deploy-backend.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Frontend  | ${{ needs.build-frontend.result }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| KB Docs   | ${{ needs.upload-kb-docs.result }} |" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Active URLs" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -344,4 +313,3 @@ jobs:
           echo "| Cognito Pool ID | \`${{ steps.urls.outputs.cognito_pool }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Cognito Client ID | \`${{ steps.urls.outputs.cognito_client }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bedrock Agent ID | \`${{ steps.urls.outputs.bedrock_agent_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Knowledge Base ID | \`${{ steps.urls.outputs.kb_id }}\` |" >> "$GITHUB_STEP_SUMMARY"

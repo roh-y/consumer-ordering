@@ -119,23 +119,3 @@ output "bedrock_agent_id" {
   description = "Bedrock Agent ID"
   value       = module.bedrock.agent_id
 }
-
-output "bedrock_knowledge_base_id" {
-  description = "Bedrock Knowledge Base ID"
-  value       = module.bedrock.knowledge_base_id
-}
-
-output "opensearch_collection_endpoint" {
-  description = "OpenSearch Serverless collection endpoint"
-  value       = module.opensearch.collection_endpoint
-}
-
-output "kb_s3_bucket_name" {
-  description = "S3 bucket for knowledge base documents"
-  value       = module.bedrock.kb_s3_bucket_name
-}
-
-output "bedrock_data_source_id" {
-  description = "Bedrock Knowledge Base data source ID"
-  value       = module.bedrock.data_source_id
-}

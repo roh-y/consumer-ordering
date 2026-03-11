@@ -23,8 +23,8 @@ This application follows a **microservices architecture** where each service han
                               ┌───────────────┘      └──────────────┐
                               │                                     │
                      ┌────────▼─────────┐                ┌─────────▼─────────┐
-                     │ Cognito Authorizer│                │ Lambda (Recommend)│
-                     │ (validates JWT)   │                │ Bedrock+OpenSearch│
+                     │ Cognito Authorizer│                │ Lambda (Chat API) │
+                     │ (validates JWT)   │                │ Bedrock Agent     │
                      └────────┬─────────┘                └───────────────────┘
                               │
                      ┌────────▼─────────┐
@@ -72,11 +72,12 @@ This application follows a **microservices architecture** where each service han
 ### Recommendation Service / Customer Support Agent (Phase 4)
 - **Tech**: Python 3.12 Lambda functions
 - **Purpose**: AI-powered customer support agent using Amazon Bedrock Agents
-- **Model**: Claude 3 Haiku (via Bedrock) for conversational responses
-- **Knowledge Base**: Plan docs, FAQs, comparisons, and policies stored in S3, embedded with Titan Embeddings v2, indexed in OpenSearch Serverless for RAG retrieval
-- **Two Lambda Functions**:
+- **Model**: Amazon Nova Lite (via Bedrock) for conversational responses
+- **Knowledge Base**: Plan docs, FAQs, comparisons, and policies are chunked and embedded at build time using Titan Embeddings v2, stored as a FAISS vector index bundled with the Lambda deployment package
+- **Three Lambda Functions**:
   - `chat-api` — Receives `POST /api/agent/chat` from API Gateway, extracts userId from JWT, invokes the Bedrock Agent, and returns the streaming response
   - `agent-actions` — Action group Lambda invoked by the Bedrock Agent to query DynamoDB (order status, user profile, plan listings)
+  - `kb-search` — Action group Lambda that performs FAISS vector similarity search against the embedded knowledge base index
 - **Capabilities**: Answer plan questions, compare plans, check order status, recommend plans based on needs, handle billing/policy queries
 - **Frontend**: Floating chat widget (bottom-right corner) visible only to authenticated users
 
@@ -92,8 +93,8 @@ React ChatWidget           API Gateway           Chat API Lambda         Bedrock
     │                          │                       │──invoke_agent()──────►│
     │                          │                       │                       │
     │                          │                       │   ┌──────────────────┤
-    │                          │                       │   │ 1. Check KB      │
-    │                          │                       │   │    (OpenSearch   │
+    │                          │                       │   │ 1. Search KB     │
+    │                          │                       │   │    (FAISS Lambda │
     │                          │                       │   │    vector search)│
     │                          │                       │   │                  │
     │                          │                       │   │ 2. Call Action   │
@@ -103,17 +104,17 @@ React ChatWidget           API Gateway           Chat API Lambda         Bedrock
     │                          │                       │   │                  │
     │                          │                       │   │ 3. Generate      │
     │                          │                       │   │    response with │
-    │                          │                       │   │    Claude 3 Haiku│
+    │                          │                       │   │    Nova Lite     │
     │                          │                       │   └──────────────────┤
     │                          │                       │◄──streaming response──│
     │◄──{message, sessionId}───│◄──────────────────────│                       │
 ```
 
 **Key points:**
-- The Bedrock Agent decides autonomously whether to query the knowledge base, call an action group, or both, based on the user's question
+- The Bedrock Agent decides autonomously whether to search the knowledge base (via the FAISS search Lambda), call the customer actions Lambda, or both, based on the user's question
 - Session state (userId) is passed to the agent so it can look up user-specific data without the user providing their ID
 - Sessions are ephemeral — stored in Bedrock Agent Runtime, not persisted across page reloads
-- The knowledge base uses RAG: plan documents are chunked, embedded with Titan Embeddings v2, and stored as vectors in OpenSearch Serverless
+- The knowledge base uses RAG: plan documents are chunked and embedded with Titan Embeddings v2 at build time, stored as a FAISS index bundled with the KB search Lambda
 
 ## Data Flow: User Registration
 

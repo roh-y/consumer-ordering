@@ -57,9 +57,9 @@ Welcome to the **Consumer Ordering** platform — a microservices-based wireless
               │        │       │        │   │     │
               ▼        ▼       ▼        ▼   ▼     ▼
           ┌───────┐┌───────┐┌───────┐┌─────────┐┌─────────┐
-          │ User  ││ Plan  ││ Order ││ Action  ││Knowledge│
-          │Service││Catalog││Service││ Group   ││  Base   │
-          │ :8081 ││Service││ :8083 ││ Lambda  ││(OpenSearch)
+          │ User  ││ Plan  ││ Order ││ Action  ││KB Search│
+          │Service││Catalog││Service││ Group   ││ Lambda  │
+          │ :8081 ││Service││ :8083 ││ Lambda  ││ (FAISS) │
           │       ││ :8082 ││       ││         ││         │
           └───┬───┘└───┬───┘└───┬───┘└────┬────┘└─────────┘
               │        │       │         │
@@ -107,9 +107,8 @@ consumer-ordering/
 │       ├── dynamodb/            # 3 tables with GSIs
 │       ├── ecs/                 # Cluster, services, ECR, ALB, IAM
 │       ├── iam/                 # Developer group, GitHub Actions role
-│       ├── lambda/              # Action group + chat API functions
+│       ├── lambda/              # Action group + KB search + chat API functions
 │       ├── monitoring/          # CloudWatch logs, alarms, dashboards
-│       ├── opensearch/          # AOSS vector collection for KB
 │       ├── ses/                 # Email identity
 │       ├── sqs/                 # Order events queue + DLQ
 │       └── vpc/                 # VPC, subnets, NAT, IGW
@@ -154,9 +153,8 @@ Every AWS resource is created by Terraform. Here's the mapping from module to wh
 | `modules/monitoring` | CloudWatch Log Groups, Alarms, Dashboards | Observability |
 | `modules/api-gateway` | HTTP API v2, JWT Authorizer, VPC Link, Routes | API entry point |
 | `modules/cloudfront` | CloudFront Distribution, S3 Bucket (frontend) | CDN + static hosting |
-| `modules/bedrock` | Bedrock Agent, Knowledge Base, S3 KB Bucket | AI customer support |
-| `modules/opensearch` | AOSS Collection (vector search) | KB vector embeddings |
-| `modules/lambda` | 2 Lambda Functions (Python 3.12) | Agent action group + chat API |
+| `modules/bedrock` | Bedrock Agent, Action Groups | AI customer support |
+| `modules/lambda` | 3 Lambda Functions (Python 3.12) + FAISS Layer | Agent actions, KB search, chat API |
 | `modules/iam` | IAM Group, GitHub Actions Role | Developer & CI/CD access |
 
 **Naming convention:** `{project_name}-{environment}-{resource}` → e.g., `consumer-ordering-dev-cluster`
@@ -574,8 +572,8 @@ Chat API Lambda ──► Bedrock Agent (Nova Lite model)
                 Base         Lambda
                   │            │
                   ▼            ▼
-              OpenSearch    DynamoDB
-              (AOSS)       (all tables)
+              FAISS Index   DynamoDB
+              (in Lambda)  (all tables)
 ```
 
 ### Components
@@ -585,8 +583,8 @@ Chat API Lambda ──► Bedrock Agent (Nova Lite model)
 | **Model** | Amazon Nova Lite v1 |
 | **Agent alias** | `live` (required for runtime invocation) |
 | **Session TTL** | 10 minutes |
-| **Embedding model** | Amazon Titan Embed Text v2 |
-| **Vector store** | OpenSearch Serverless (VECTORSEARCH type) |
+| **Embedding model** | Amazon Titan Embed Text v2 (build-time + query-time) |
+| **Vector store** | FAISS index embedded in KB Search Lambda |
 
 ### Knowledge Base
 
@@ -596,7 +594,7 @@ Documents in `services/recommendation-service/knowledge-base/`:
 - `policies/` — Return policy
 - `comparison/` — Plan comparison guide
 
-These are synced to S3 and ingested into the OpenSearch vector index for RAG (Retrieval-Augmented Generation).
+These are chunked and embedded at build time using `scripts/build-faiss-index.py`, producing a FAISS vector index bundled with the KB Search Lambda for RAG (Retrieval-Augmented Generation).
 
 ### Action Group Operations
 
@@ -763,7 +761,9 @@ The frontend Vite dev server proxies `/api/*` to the correct backend service aut
 | `make deploy-frontend` | Build + deploy frontend to S3/CloudFront |
 | `make deploy-all` | Deploy everything |
 | `make deploy-login` | Login to Amazon ECR |
-| `make upload-kb-docs` | Upload KB docs to S3 |
+| `make build-faiss-index` | Build FAISS vector index from KB docs |
+| `make build-faiss-layer` | Build FAISS Lambda layer (requires Docker) |
+| `make deploy-agent` | Build index + layer, then deploy agent infra |
 | `make tf-init` / `make tf-plan` / `make tf-apply` | Terraform commands |
 | `make export-data` | Export DynamoDB + Cognito data |
 | `make import-data DIR=...` | Import DynamoDB data |
